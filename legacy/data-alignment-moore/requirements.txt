@@ -1,3 +1,5 @@
 datasets
+huggingface-hub
 soundfile
 pandas
+python-dotenv 
