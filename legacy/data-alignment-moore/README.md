@@ -45,4 +45,12 @@ then run the following command:
 python push_to_hf.py --dataset_path ./processed_data/hf_dataset --repo_id ArissBandoss/proverbes-moore-vol2
 ```
 
+Perfect!!! Now check the uploaded dataset on the repo you gave below (ex: ArissBandoss/proverbes-moore-vol2)
+
+
+# Audio Segmentation/Alignment based on pauses or silence
+
+How to perform silence-based segmentation on the Hugging Face dataset.
+
+**Note:** This won't align perfectly with transcription but can serve as an approximate solution and then we can manually align the segments with the corresponding transcriptions.
 
