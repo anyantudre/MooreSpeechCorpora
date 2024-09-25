@@ -1,3 +1,9 @@
+# additional
+#manual_labeling/audios
+#manual_labeling/clips
+#manual_labeling/transcripts
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

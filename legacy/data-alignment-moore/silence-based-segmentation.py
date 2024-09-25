@@ -2,28 +2,15 @@ import os
 import argparse
 from pydub import AudioSegment
 from pydub.silence import split_on_silence
-from datasets import load_dataset, Dataset
+import numpy as np
 import nltk
-from huggingface_hub import login  # To authenticate with Hugging Face Hub
+from datasets import load_dataset, Dataset, Audio
+from huggingface_hub import login 
 
-nltk.download('punkt')  # Download the tokenizer for sentence splitting
+nltk.download('punkt')  # tokenizer for sentence splitting
+nltk.download('punkt_tab')
 
 def split_audio_on_silence(audio, silence_thresh=-50, min_silence_len=500, output_folder="segments"):
-    """
-    Splits a given audio file into segments based on periods of silence.
-    
-    Args:
-        audio_path (str): Path to the input audio file.
-        silence_thresh (int): Silence threshold in dBFS. Default is -50 dBFS.
-        min_silence_len (int): Minimum length of silence in milliseconds. Default is 500 ms.
-        output_folder (str): Folder where the segmented audio files will be saved.
-        
-    Returns:
-        list: A list of file paths to the segmented audio chunks.
-    """
-    # Load the audio file
-    #audio = AudioSegment.from_file(audio_path)
-    
     # Split the audio based on silence
     audio_chunks = split_on_silence(
         audio, 
@@ -37,7 +24,7 @@ def split_audio_on_silence(audio, silence_thresh=-50, min_silence_len=500, outpu
     # Save each audio segment and store their file paths
     segment_paths = []
     for i, chunk in enumerate(audio_chunks):
-        segment_name = f"segment_{os.path.basename(audio_path).split('.')[0]}_{i}.mp3"
+        segment_name = f"segment_{i}.mp3"
         segment_path = os.path.join(output_folder, segment_name)
         chunk.export(segment_path, format="mp3")
         segment_paths.append(segment_path)
@@ -59,9 +46,36 @@ def process_row(row, silence_thresh, min_silence_len, output_folder):
     Returns:
         dict: A dictionary with segmented audio paths and corresponding transcription parts.
     """
+    audio_data = row['audio']['array']  # Get the raw audio array
+    sample_rate = row['audio']['sampling_rate']  # Get the sample rate
+
+    #print(f"==================DEBUGGING===================> array size {audio_data.shape}")
+    #print(f"==================DEBUGGING===================> array type {audio_data.dtype}")
+    #print(f"==================DEBUGGING===================> array {audio_data}")
+
+    # Check audio data shape
+    if len(audio_data.shape) == 1:  # Mono
+        channels = 1
+    elif len(audio_data.shape) == 2:  # Stereo
+        channels = audio_data.shape[1]
+    else:
+        raise ValueError("Unsupported audio format")
+
+    # If the audio data is in float format, normalize it and convert to int16
+    #if audio_data.dtype == np.float32:
+    #    audio_data = np.int16(audio_data / np.max(np.abs(audio_data)) * 32767)
+
+    # Create an AudioSegment from the array and sample rate
+    audio_segment = AudioSegment(
+        audio_data.tobytes(), 
+        frame_rate=sample_rate, 
+        sample_width=2, 
+        channels=channels  # Set channels based on audio data shape
+    )
+    
     # Split the audio into segments based on silence
-    print(f"==================DEBUGGING===================> Splitting the audio into segments")
-    audio_segments = split_audio_on_silence(row["audio"], silence_thresh, min_silence_len, output_folder)
+    #print(f"==================DEBUGGING===================> Splitting the audio into segments")
+    audio_segments = split_audio_on_silence(audio_segment, silence_thresh, min_silence_len, output_folder)
     
     # Split the transcription into sentences
     transcription_segments = nltk.tokenize.sent_tokenize(row["transcript"])  # Split transcription into sentences
