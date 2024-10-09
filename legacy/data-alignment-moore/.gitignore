@@ -2,7 +2,9 @@
 #manual_labeling/audios
 #manual_labeling/clips
 #manual_labeling/transcripts
-
+*.mp3
+*.wav
+manual_labeling/processed_data
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
