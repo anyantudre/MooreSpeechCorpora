@@ -1,3 +1,8 @@
+# My dirs
+youtube-mp3-downloads/
+data/
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
