@@ -3,3 +3,6 @@ datasets
 pydub
 pandas
 huggingface_hub
+pytube
+pytubefix
+yt_dlp
