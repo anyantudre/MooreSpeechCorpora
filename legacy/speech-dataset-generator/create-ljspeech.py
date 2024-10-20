@@ -4,17 +4,37 @@ from pydub.silence import split_on_silence
 import pandas as pd
 import os
 import glob
+import numpy as np
+import torch
+from dotenv import load_dotenv
+from transformers import WhisperProcessor, WhisperForConditionalGeneration, pipeline
+from huggingface_hub import login
 
-from transformers import WhisperProcessor, WhisperForConditionalGeneration
+load_dotenv()
+auth_token = os.getenv('HF_TOKEN')
+login(token=auth_token)
 
-
-### login to hugging face please!!!
+device = 0 if torch.cuda.is_available() else "cpu"
+    
+def transcribe(inputs, model, language):
+    if inputs is None:
+        print("No audio file submitted!")
+        return None
+    
+    pipe = pipeline(
+        task="automatic-speech-recognition",
+        model=model,
+        device=device,
+        return_timestamps=True
+    )
+    
+    output = pipe(inputs)
+    return output['text']
 
 
 ### load model and processor
-processor = WhisperProcessor.from_pretrained("ArissBandoss/whisper-small-mos")
-model = WhisperForConditionalGeneration.from_pretrained("ArissBandoss/whisper-small-mos")
-forced_decoder_ids = processor.get_decoder_prompt_ids(language="french", task="transcribe")
+# processor = WhisperProcessor.from_pretrained("ArissBandoss/whisper-small-mos")
+# model = WhisperForConditionalGeneration.from_pretrained("ArissBandoss/whisper-small-mos")
 
 
 ### function to process audio files
@@ -53,19 +73,31 @@ def process_audio_files(input_dir, output_dir):
 
         ### transcribe each chunk and save with metadata
         for i, chunk in enumerate(audio_chunks):
+            ### convert chunk to mono if it's not
+            chunk = chunk.set_channels(1)
+
+            ### convert chunk to numpy array
+            audio_data = np.array(chunk.get_array_of_samples(), dtype=np.float32)
+
+            ### normalize the audio data to [-1.0, 1.0]
+            audio_data /= np.max(np.abs(audio_data))
+
             ### export chunk as temporary wav file
             chunk_path = os.path.join(output_dir, f"chunk_{i}.wav")
             chunk.export(chunk_path, format="wav")
 
             ### transcribe chunk
-            input_features = processor(chunk, sampling_rate=16000, return_tensors="pt").input_features
-
-            ### generate token ids
-            predicted_ids = model.generate(input_features, forced_decoder_ids=forced_decoder_ids)
-            result = processor.batch_decode(predicted_ids, skip_special_tokens=True)
+            result = transcribe(
+                        inputs=chunk_path, 
+                        model="ArissBandoss/whisper-small-mos", 
+                        language="fr",
+                        
+                    )
 
             ### get the transcribed text
-            text = result[0].strip()
+            text = result.strip()
+
+            
 
             ### save chunk with unique ID
             sentence_id = f"LJ{str(len(metadata) + 1).zfill(4)}"
@@ -77,6 +109,8 @@ def process_audio_files(input_dir, output_dir):
                 "text": text,
                 "textCleaned": text.lower()  ### TODO: Add textcleaner library (multilanguage support)
             })
+
+            print(f"Transcription for {sentence_id} =====> {text}\n\n")
 
             ### remove temporary chunk file
             os.remove(chunk_path)
@@ -98,8 +132,8 @@ def parse_arguments():
         Namespace: Parsed arguments including input and output directories.
     """
     parser = argparse.ArgumentParser(description="Process WAV audio files into chunks and transcribe them.")
-    parser.add_argument("input_dir", type=str, help="the directory containing the input WAV files")
-    parser.add_argument("output_dir", type=str, help="the directory to save chunked audio files and metadata")
+    parser.add_argument("-i", "--input_dir", type=str, required=True, help="the directory containing the input WAV files")
+    parser.add_argument("-o", "--output_dir", type=str, required=True, help="the directory to save chunked audio files and metadata")
     return parser.parse_args()
 
 
@@ -110,6 +144,4 @@ if __name__ == "__main__":
     ### process the audio files in the specified input directory and save to output directory
     process_audio_files(args.input_dir, args.output_dir)
 
-
-
-### basic usage: python process_audio.py /path/to/input_dir /path/to/output_dir
+### basic usage: python process_audio.py -i /path/to/input_dir -o /path/to/output_dir
