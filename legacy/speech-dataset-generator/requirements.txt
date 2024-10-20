@@ -1,3 +1,5 @@
-openai-whisper
+transformers
+datasets
 pydub
 pandas
+huggingface_hub

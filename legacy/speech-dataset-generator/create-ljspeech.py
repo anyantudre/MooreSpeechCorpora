@@ -1,12 +1,21 @@
-import whisper
 from pydub import AudioSegment
 from pydub.silence import split_on_silence
 import pandas as pd
 import os
 import glob
 
-# Initialize Whisper model
-model = whisper.load_model("base")
+from transformers import WhisperProcessor, WhisperForConditionalGeneration
+from datasets import Audio, load_dataset
+
+
+### HF logging please!!!
+
+
+# load model and processor
+processor = WhisperProcessor.from_pretrained("ArissBandoss/whisper-small-mos")
+model = WhisperForConditionalGeneration.from_pretrained("ArissBandoss/whisper-small-mos")
+forced_decoder_ids = processor.get_decoder_prompt_ids(language="french", task="transcribe")
+
 
 # Directory containing the input WAV files
 input_dir = "./test-data/"
@@ -46,10 +55,15 @@ for wav_file in wav_files:
         chunk.export(chunk_path, format="wav")
         
         # Transcribe chunk
-        result = model.transcribe(chunk_path)
+        #sampling_rate, audio = AudioSegment.from_wav(chunk_path)
+        input_features = processor(chunk_path, sampling_rate=16000, return_tensors="pt").input_features
         
+        # generate token ids
+        predicted_ids = model.generate(input_features, forced_decoder_ids=forced_decoder_ids)
+        result = processor.batch_decode(predicted_ids, skip_special_tokens=True)
+
         # Get the transcribed text
-        text = result['text'].strip()
+        text = result[0].strip()
         
         # Save chunk with unique ID
         sentence_id = f"LJ{str(len(metadata) + 1).zfill(4)}"
@@ -64,6 +78,7 @@ for wav_file in wav_files:
 
         # Remove temporary chunk file
         os.remove(chunk_path)
+
 
 # Create a metadata.csv file with sentences and corresponding audio file IDs
 metadata_df = pd.DataFrame(metadata)
