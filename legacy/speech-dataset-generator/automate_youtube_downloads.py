@@ -1,4 +1,4 @@
-### basic usage: python automate_youtube_downloads.py -u "https://www.youtube.com/playlist?list=PLafvIliUVicSDTh6TGnlOAp7PBnWJ5zeF" "https://www.youtube.com/watch?v=Rkit4YUvTDs" -o "./youtube-mp3-downloads"
+### basic usage: python automate_youtube_downloads.py -u "urls.txt" -o "./youtube-mp3-downloads"
 
 
 import os
@@ -48,12 +48,19 @@ def process_urls(urls, output_dir):
             download_video(url, output_dir)
 
 
+### Function to read URLs from a file
+def read_urls_from_file(file_path):
+    """Read a list of URLs from a specified file."""
+    with open(file_path, 'r') as file:
+        urls = file.read().splitlines()
+    return [url.strip() for url in urls if url.strip()]
+
+
 ### Function to parse CLI arguments
 def parse_arguments():
     """Parse command line arguments for downloading YouTube content."""
     parser = argparse.ArgumentParser(description="Automate downloading YouTube playlists and videos.")
-    parser.add_argument("-u", "--urls", type=str, nargs='+', required=True,
-                        help="List of YouTube playlist or video URLs to download.")
+    parser.add_argument("-u", "--urls", type=str, nargs='?', help="Path to a file containing YouTube playlist or video URLs to download.")
     parser.add_argument("-o", "--output_dir", type=str, default="./youtube-mp3-downloads",
                         help="Directory to save downloaded audio files (default: './youtube-mp3-downloads')")
     return parser.parse_args()
@@ -67,7 +74,14 @@ if __name__ == "__main__":
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
+    ### Read URLs from the file if provided
+    if args.urls:
+        urls = read_urls_from_file(args.urls)
+    else:
+        print("No URLs provided. Please specify a file containing URLs.")
+        exit(1)
+
     ### Process the provided URLs
-    process_urls(args.urls, args.output_dir)
+    process_urls(urls, args.output_dir)
 
     print("All requested playlists and videos have been downloaded.")
