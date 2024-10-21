@@ -25,7 +25,15 @@ def download_audio(url, output_dir):
         original_title = yt.title
         sanitized_title = sanitize_filename(original_title)
         
-        ### set download path and download audio
+        ### set download path
+        downloaded_file = os.path.join(output_dir, sanitized_title + ".mp4")
+        
+        ### check if the file already exists
+        if os.path.exists(downloaded_file):
+            print(f"file already exists: {downloaded_file}. Skipping download.")
+            return None
+        
+        ### download audio
         downloaded_file = video.download(output_path=output_dir, filename=sanitized_title + ".mp4")
         
         print(f"downloaded audio file: {downloaded_file}")
@@ -48,7 +56,6 @@ def parse_arguments():
     parser.add_argument("-o", "--output_dir", type=str, default="./youtube-downloads",
                         help="Directory to save the downloaded audio files (default: './youtube-mp3-downloads')")
     return parser.parse_args()
-
 
 
 if __name__ == "__main__":
