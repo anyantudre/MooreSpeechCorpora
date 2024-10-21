@@ -1,3 +1,5 @@
+### basic usage: python convert_to_wav.py -i "./youtube-mp3-downloads/kibaye-wakato" -o "./data/raw_data"
+
 import argparse
 from pydub import AudioSegment
 import os
@@ -20,12 +22,18 @@ def convert_to_wav(input_file, output_dir):
         base, ext = os.path.splitext(input_file)
         wav_file = f"{base}.wav"
         
+        ### move the wav file to output_dir
+        wav_file_final_path = os.path.join(output_dir, os.path.basename(wav_file))
+
+        ### Check if the WAV file already exists
+        if os.path.exists(wav_file_final_path):
+            print(f"WAV file already exists: {wav_file_final_path}. Skipping conversion.")
+            return wav_file_final_path
+
         ### convert to wav using pydub
         audio = AudioSegment.from_file(input_file)
         audio.export(wav_file, format="wav")
         
-        ### move the wav file to output_dir
-        wav_file_final_path = os.path.join(output_dir, os.path.basename(wav_file))
         os.rename(wav_file, wav_file_final_path)
         
         print(f"converted and saved WAV file: {wav_file_final_path}")

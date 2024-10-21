@@ -1,3 +1,5 @@
+### basic usage:  python create-ljspeech.py -i "./data/raw_data" -o "./data/chunked_data" --min_duration 4 --max_duration 20
+
 import argparse
 from pydub import AudioSegment
 from pydub.silence import split_on_silence
@@ -15,7 +17,8 @@ auth_token = os.getenv('HF_TOKEN')
 login(token=auth_token)
 
 device = 0 if torch.cuda.is_available() else "cpu"
-    
+
+
 def transcribe(inputs, model, language):
     if inputs is None:
         print("No audio file submitted!")
@@ -32,18 +35,16 @@ def transcribe(inputs, model, language):
     return output['text']
 
 
-### load model and processor
-# processor = WhisperProcessor.from_pretrained("ArissBandoss/whisper-small-mos")
-# model = WhisperForConditionalGeneration.from_pretrained("ArissBandoss/whisper-small-mos")
-
 
 ### function to process audio files
-def process_audio_files(input_dir, output_dir):
+def process_audio_files(input_dir, output_dir, min_duration=3, max_duration=15):
     """Process audio files to split them into chunks, transcribe them, and save metadata.
 
     Args:
         input_dir (str): The directory containing the input WAV files.
         output_dir (str): The directory to save chunked audio files and metadata.
+        min_duration (float): Minimum duration for audio chunks in seconds.
+        max_duration (float): Maximum duration for audio chunks in seconds.
     """
     audio_dir = os.path.join(output_dir, "audio")
     if not os.path.exists(audio_dir):
@@ -69,10 +70,20 @@ def process_audio_files(input_dir, output_dir):
             silence_thresh = audio.dBFS - 14
 
         ### split the audio into chunks based on silence
-        audio_chunks = split_on_silence(audio, min_silence_len=min_silence_len, silence_thresh=silence_thresh, keep_silence=keep_silence)
+        audio_chunks = split_on_silence(audio, 
+                                        min_silence_len=min_silence_len, 
+                                        silence_thresh=silence_thresh, 
+                                        keep_silence=keep_silence)
 
         ### transcribe each chunk and save with metadata
         for i, chunk in enumerate(audio_chunks):
+            chunk_duration_sec = len(chunk) / 1000.0  ### chunk duration in seconds
+
+            ### discard chunks that don't meet the duration criteria
+            if chunk_duration_sec < min_duration or chunk_duration_sec > max_duration:
+                print(f"Skipping chunk {i} (Duration: {chunk_duration_sec:.2f} seconds)")
+                continue
+
             ### convert chunk to mono if it's not
             chunk = chunk.set_channels(1)
 
@@ -91,13 +102,10 @@ def process_audio_files(input_dir, output_dir):
                         inputs=chunk_path, 
                         model="ArissBandoss/whisper-small-mos", 
                         language="fr",
-                        
                     )
 
             ### get the transcribed text
             text = result.strip()
-
-            
 
             ### save chunk with unique ID
             sentence_id = f"LJ{str(len(metadata) + 1).zfill(4)}"
@@ -124,6 +132,7 @@ def process_audio_files(input_dir, output_dir):
     print(f"CSV file saved to {metadata_csv_path}")
 
 
+
 ### function to handle CLI arguments
 def parse_arguments():
     """Parse command line arguments for the audio processing script.
@@ -134,6 +143,8 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Process WAV audio files into chunks and transcribe them.")
     parser.add_argument("-i", "--input_dir", type=str, required=True, help="the directory containing the input WAV files")
     parser.add_argument("-o", "--output_dir", type=str, required=True, help="the directory to save chunked audio files and metadata")
+    parser.add_argument("--min_duration", type=float, default=3, help="Minimum duration for audio chunks in seconds")
+    parser.add_argument("--max_duration", type=float, default=15, help="Maximum duration for audio chunks in seconds")
     return parser.parse_args()
 
 
@@ -142,6 +153,4 @@ if __name__ == "__main__":
     args = parse_arguments()
 
     ### process the audio files in the specified input directory and save to output directory
-    process_audio_files(args.input_dir, args.output_dir)
-
-### basic usage: python process_audio.py -i /path/to/input_dir -o /path/to/output_dir
+    process_audio_files(args.input_dir, args.output_dir, min_duration=args.min_duration, max_duration=args.max_duration)
