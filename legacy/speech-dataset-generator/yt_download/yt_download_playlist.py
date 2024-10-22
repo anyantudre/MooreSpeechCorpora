@@ -2,7 +2,12 @@ import argparse
 from pytubefix import Playlist
 import os
 import sys
-from helpers.utils import sanitize_filename
+
+# Add the helpers directory to sys.path
+helpers_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'helpers'))
+sys.path.append(helpers_path)
+
+from utils import sanitize_filename
 
 
 ### function to download audio from each video in the playlist as MP3

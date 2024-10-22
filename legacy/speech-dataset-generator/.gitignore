@@ -1,7 +1,8 @@
 # My dirs
 youtube-mp3-downloads/
 data/
-*.txt
+yt_download/urls.txt
+yt_download/urls_names.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

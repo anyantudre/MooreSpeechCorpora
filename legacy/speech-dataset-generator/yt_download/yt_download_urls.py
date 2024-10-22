@@ -1,7 +1,13 @@
 import argparse
 from pytubefix import YouTube
 import os
-from helpers.utils import sanitize_filename
+import sys
+
+# Add the helpers directory to sys.path
+helpers_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'helpers'))
+sys.path.append(helpers_path)
+
+from utils import sanitize_filename
 
 
 ### function to download audio from a YouTube video
