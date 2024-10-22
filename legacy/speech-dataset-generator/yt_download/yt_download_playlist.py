@@ -2,7 +2,7 @@ import argparse
 from pytubefix import Playlist
 import os
 import sys
-from utils import sanitize_filename
+from helpers.utils import sanitize_filename
 
 
 ### function to download audio from each video in the playlist as MP3

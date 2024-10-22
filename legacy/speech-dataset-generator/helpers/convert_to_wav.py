@@ -3,7 +3,7 @@
 import argparse
 from pydub import AudioSegment
 import os
-from utils import sanitize_filename
+from helpers.utils import sanitize_filename
 
 
 ### function to convert downloaded files to wav

@@ -11,5 +11,8 @@ def sanitize_filename(filename):
     Returns:
         str: A sanitized version of the filename.
     """
+    sanitized_filename = re.sub(r'[éè]', 'e', filename)
+    sanitized_filename = re.sub(r'[à]', 'a', filename)
     # Replace spaces with underscores and remove special characters
-    return re.sub(r'[^A-Za-z0-9_.-]', '_', filename)
+    sanitized_filename = re.sub(r'[^A-Za-z0-9_.-]', '_', filename)
+    return sanitized_filename

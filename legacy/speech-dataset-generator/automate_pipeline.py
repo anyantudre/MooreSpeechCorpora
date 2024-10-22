@@ -12,7 +12,7 @@ def convert_mp3_to_wav(input_dir, output_dir):
         for folder in dirs:
             folder_path = os.path.join(root, folder)
             print(f"\n\n ================   Converting audios in {folder_path} to WAV...   ================== \n")
-            cmd = f"python convert_to_wav.py -i \"{folder_path}\" -o \"{output_dir}\""
+            cmd = f"python ./helpers/convert_to_wav.py -i \"{folder_path}\" -o \"{output_dir}\""
             subprocess.run(cmd, shell=True)
     print("All MP3s have been converted to WAVs.")
 
@@ -21,7 +21,7 @@ def convert_mp3_to_wav(input_dir, output_dir):
 def create_chunks_and_filter(input_dir, output_dir, min_duration=4, max_duration=20):
     """Create chunks from WAVs and filter them based on duration."""
     print(f"\n\n ================   Creating chunks and filtering audios from {input_dir} to {output_dir}...  ================   ")
-    cmd = f"python create-ljspeech.py -i \"{input_dir}\" -o \"{output_dir}\" --min_duration {min_duration} --max_duration {max_duration}"
+    cmd = f"python ./create_dataset/create-ljspeech.py -i \"{input_dir}\" -o \"{output_dir}\" --min_duration {min_duration} --max_duration {max_duration}"
     subprocess.run(cmd, shell=True)
     print("Chunks have been created and filtered.")
 
@@ -30,7 +30,7 @@ def create_chunks_and_filter(input_dir, output_dir, min_duration=4, max_duration
 def create_and_push_to_hf(input_dir, output_dir, hf_repo):
     """Create Hugging Face dataset and push to the Hugging Face Hub."""
     print(f"Creating Hugging Face dataset from {input_dir} and pushing to {hf_repo}...")
-    cmd = f"python create_hf_dataset.py -i \"{input_dir}\" -o \"{output_dir}\" -r \"{hf_repo}\""
+    cmd = f"python ./create_dataset/create_hf_dataset.py -i \"{input_dir}\" -o \"{output_dir}\" -r \"{hf_repo}\""
     subprocess.run(cmd, shell=True)
     print("Dataset has been created and pushed to Hugging Face.")
 
@@ -39,12 +39,12 @@ def create_and_push_to_hf(input_dir, output_dir, hf_repo):
 def parse_arguments():
     """Parse command line arguments for automating the pipeline."""
     parser = argparse.ArgumentParser(description="Automate the audio pipeline.")
-    parser.add_argument("-i", "--input_dir", type=str, default="./youtube-mp3-downloads",
-                        help="Directory containing subfolders with MP3 audio files (default: './youtube-mp3-downloads')")
-    parser.add_argument("-raw", "--raw_data_dir", type=str, default="./data/raw_data",
-                        help="Directory to save the converted WAV files (default: './data/raw_data')")
-    parser.add_argument("-chunked", "--chunked_data_dir", type=str, default="./data/chunked_data",
-                        help="Directory to save the chunked audio files (default: './data/chunked_data')")
+    parser.add_argument("-i", "--input_dir", type=str, default="./data/youtube-mp3-downloads",
+                        help="Directory containing subfolders with MP3 audio files (default: './data/youtube-mp3-downloads')")
+    parser.add_argument("-raw", "--raw_data_dir", type=str, default="./data/raw_wav_audios",
+                        help="Directory to save the converted WAV files (default: './data/raw_wav_audios')")
+    parser.add_argument("-chunked", "--chunked_data_dir", type=str, default="./data/chunked_wav_audios",
+                        help="Directory to save the chunked audio files (default: './data/chunked_wav_audios')")
     parser.add_argument("-r", "--hf_repo", type=str, required=True,
                         help="The Hugging Face repository to push the dataset (e.g., 'username/repo-name')")
     parser.add_argument("--min_duration", type=int, default=4,

@@ -1,7 +1,7 @@
 import argparse
 from pytubefix import YouTube
 import os
-from utils import sanitize_filename
+from helpers.utils import sanitize_filename
 
 
 ### function to download audio from a YouTube video
@@ -53,7 +53,7 @@ def parse_arguments():
     """
     parser = argparse.ArgumentParser(description="Download audio from YouTube video URLs.")
     parser.add_argument("youtube_urls", nargs='+', help="List of YouTube video URLs to download")
-    parser.add_argument("-o", "--output_dir", type=str, default="./youtube-downloads",
+    parser.add_argument("-o", "--output_dir", type=str, default="./youtube-mp3-downloads",
                         help="Directory to save the downloaded audio files (default: './youtube-mp3-downloads')")
     return parser.parse_args()
 
