@@ -17,7 +17,7 @@ def download_audio(url, output_dir):
     """
     try:
         ### download audio
-        print(f"downloading audio from {url}...")
+        print(f"\n\n ================ Downloading audio from {url}...   =============== \n")
         yt = YouTube(url)
         video = yt.streams.filter(only_audio=True).first()  ### filter for audio only
         

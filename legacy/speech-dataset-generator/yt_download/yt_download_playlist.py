@@ -17,7 +17,7 @@ def download_playlist_mp3(playlist_url, output_dir):
         ### load the playlist
         playlist = Playlist(playlist_url)
 
-        print(f"downloading playlist: {playlist.title}")
+        print(f"\n\n ================ Downloading playlist: {playlist.title}   =============== \n")
 
         ### ensure the output directory exists
         if not os.path.exists(output_dir):
@@ -26,7 +26,7 @@ def download_playlist_mp3(playlist_url, output_dir):
         ### loop through each video in the playlist and download the audio as MP3
         for video in playlist.videos:
             try:
-                print(f"processing video: {video.title}")
+                print(f"\n processing video: {video.title}")
 
                 ### sanitize video title for use in file name
                 sanitized_title = sanitize_filename(video.title)
@@ -49,7 +49,7 @@ def download_playlist_mp3(playlist_url, output_dir):
             except Exception as e:
                 print(f"an error occurred while processing video '{video.title}': {e}")
 
-        print("playlist download complete!")
+        print("\n\n ================ playlist download complete!   =============== \n")
     except Exception as e:
         print(f"an error occurred while downloading the playlist: {e}")
 
