@@ -1,4 +1,4 @@
-### basic usage: python create_hf_dataset.py -i ./data/chunked_data -o ./data/chunked_data/audio -r "ArissBandoss/moore-tts-new-yt-dataset"
+### basic usage: python ./create_dataset/create_hf_dataset.py -i ./data/chunked_wav_audios -o ./data/chunked_wav_audios -r "ArissBandoss/moore-tts-new-yt-dataset"
 
 
 import argparse
@@ -30,11 +30,13 @@ def create_dataset_from_transcriptions(input_dir, output_dir, repo_id, sample_ra
 
     metadata_df = pd.read_csv(metadata_csv_path, sep="|", header=None, names=["ID", "text", "textCleaned"])
 
+    audio_IDs = []
     audio_paths = []
     audio_lengths = []
 
     # Process audio files
     for idx, row in metadata_df.iterrows():
+        audio_ID = row['ID']
         audio_file = os.path.join(input_dir, "audio", f"{row['ID']}.wav")
         if not os.path.exists(audio_file):
             raise FileNotFoundError(f"Audio file {audio_file} does not exist!")
@@ -44,11 +46,13 @@ def create_dataset_from_transcriptions(input_dir, output_dir, repo_id, sample_ra
         audio_length = librosa.get_duration(y=audio_data, sr=sample_rate)
 
         # Store the path (instead of the actual array) for Hugging Face Audio recognition
+        audio_IDs.append(audio_ID)
         audio_paths.append(audio_file)
         audio_lengths.append(audio_length)
 
     # Create DatasetDict with proper Audio, text, and audio_length columns
     dataset = Dataset.from_dict({
+        "audio_IDs": audio_IDs,
         "audio": audio_paths,
         "text": metadata_df["text"],
         "audio_length": audio_lengths,

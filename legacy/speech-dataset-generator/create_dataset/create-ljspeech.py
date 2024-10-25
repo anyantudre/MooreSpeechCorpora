@@ -120,6 +120,10 @@ def process_audio_files(input_dir, output_dir, min_duration=3, max_duration=15):
 
             print(f"Transcription for {sentence_id} =====> {text}\n\n")
 
+            metadata_df = pd.DataFrame(metadata)
+            metadata_csv_path = os.path.join(output_dir, "metadata.csv")
+            metadata_df.to_csv(metadata_csv_path, sep="|", header=False, index=False)
+
             ### remove temporary chunk file
             os.remove(chunk_path)
 

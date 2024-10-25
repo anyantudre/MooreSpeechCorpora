@@ -59,7 +59,7 @@ if __name__ == "__main__":
     args = parse_arguments()
 
     ### Step 1: Convert all MP3s in subfolders to WAVs
-    convert_mp3_to_wav(args.input_dir, args.raw_data_dir)
+    #convert_mp3_to_wav(args.input_dir, args.raw_data_dir)
 
     ### Step 2: Create chunks of audios and filter based on duration
     create_chunks_and_filter(args.raw_data_dir, args.chunked_data_dir, args.min_duration, args.max_duration)
