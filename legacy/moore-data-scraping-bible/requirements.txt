@@ -1,0 +1,25 @@
+# Audio/speech processing
+sox
+ffmpeg-python
+librosa
+
+# Web scraping
+scrapy
+
+# Text processing
+icu_tokenizer
+
+# Hugging Face & model training
+transformers
+datasets
+accelerate
+peft@git+https://github.com/huggingface/peft.git@main
+evaluate
+jiwer
+
+# Fairseq (for forced alignment)
+fairseq
+
+# Optional (for pulling & handling Bible data)
+beautifulsoup4
+requests
