@@ -1,3 +1,11 @@
+# manually added
+fairseq/
+nlp4all/
+uroman/
+MooreBible/
+
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
