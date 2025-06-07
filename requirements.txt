@@ -1,0 +1,8 @@
+scrapy 
+ICU-Tokenizer 
+sox 
+librosa 
+datasets
+tensorboardX
+#ffmpeg-python #no need
+#fairseq #no need
