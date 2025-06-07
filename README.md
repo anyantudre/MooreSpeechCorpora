@@ -13,15 +13,9 @@ This toolkit reproduces the full Moore Speech Corpora data pipeline.
 1. [Features](#features)  
 2. [Installation](#installation)  
 3. [Quick Start](#quick-start)  
-4. [Usage](#usage)  
-   - [Data Crawling](#data-crawling)  
-   - [Forced Alignment](#forced-alignment)  
-   - [Preprocessing](#preprocessing)  
-   - [Dataset Preparation](#dataset-preparation)  
-5. [Environment Setup (Lightning AI Studio)](#environment-setup-lightning-ai-studio)  
+4. [Usage](#usage)
 6. [Contributing](#contributing)  
 7. [License](#license)
-
 
 ---
 
@@ -45,8 +39,8 @@ moore-toolkit/
 ├─ environment.yml
 └─ README.md
 ```
----
 
+---
 
 ## Installation & Setup
 ```bash
@@ -91,19 +85,6 @@ See [forced_alignment/README.md](forced_alignment/README.md) for full instructio
 python datasets/prepare_hf_dataset.py --input_folder MooreBible/aligned/Moore --repo_id anyantudre/moore-asr-dataset --hf_token hf_xxxx
 ```
 See [datasets/README.md](datasets/README.md) for full instructions.
-
-
-
-### Preprocessing
-```bash
-bash preprocessing/resample.sh
-python preprocessing/text_normalization.py --input ...
-```
-
-### Dataset Preparation
-```bash
-python datasets/prepare_hf_dataset.py --input_folder ... --repo_id ...
-```
 
 ---
 
