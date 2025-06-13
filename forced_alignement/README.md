@@ -18,3 +18,17 @@ bash forced_alignement/align_and_segment.sh \
   --lang mos \
   --uroman_path ../uroman/bin
 ```
+
+```bash
+bash forced_alignement/align_and_segment.sh   --audio_folder datasets/contes_moore/vol3/raw/moore_resampled   --text_folder datasets/contes_moore/vol3/raw/moore_resampled   --output_folder datasets/contes_moore/vol3/aligned/moore   --lang mos   --uroman_path ../uroman/bin
+```
+
+Proverbes:
+```bash
+bash forced_alignement/align_and_segment.sh \
+  --audio_folder datasets/moore/proverbes_moore/vol9/resampled \
+  --text_folder datasets/moore/proverbes_moore/vol9/resampled \
+  --output_folder datasets/moore/proverbes_moore/vol9/aligned \
+  --lang mos \
+  --uroman_path ../uroman/bin
+  ```

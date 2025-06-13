@@ -2,12 +2,15 @@
 fairseq/
 uroman/
 MooreBible/
-datasets/aligned/
-datasets/raw/
+datasets/moore
 *.wav
 *.flac
 *.mp3
 steps.md
+uroman/
+fairseq/
+notebooks/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

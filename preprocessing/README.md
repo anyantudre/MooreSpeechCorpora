@@ -12,3 +12,15 @@ bash preprocessing/resample.sh \
   --input_folder datasets/raw/Moore \
   --output_folder datasets/raw/Moore_resampled
 ```
+
+Contes:
+```bash
+bash preprocessing/resample.sh --input_folder datasets/contes_moore/vol3/raw/moore --output_folder datasets/contes_moore/vol3/raw/moore_resampled
+```
+
+Proverbes:
+```bash
+bash preprocessing/resample.sh \
+  --input_folder datasets/proverbes_moore/preprocessed/moore \
+  --output_folder datasets/proverbes_moore/raw/moore_resampled
+```

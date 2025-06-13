@@ -1,8 +1,8 @@
-scrapy 
-ICU-Tokenizer 
-sox 
-librosa 
-datasets
+scrapy==2.13.1
+icu-tokenizer==0.0.1
+sox==1.5.0
+librosa==0.11.0 
+datasets==3.6.0
 tensorboardX
-#ffmpeg-python #no need
-#fairseq #no need
+#ffmpeg-python #no need for now
+#fairseq #no need for now

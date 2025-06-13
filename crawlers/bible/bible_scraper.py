@@ -1,23 +1,24 @@
 """
 Bible Crawler.
-@source: https://github.com/cawoylel/nlp4all/blob/main/asr/src/scraper.py
+Adapted from: https://github.com/cawoylel/nlp4all/blob/main/asr/src/scraper.py
 """
 
-from typing import List
-import re
+
 from pathlib import Path
+from typing import List
 import requests
-from scrapy import Spider, Request
+import re
+
 from icu_tokenizer import SentSplitter
+from scrapy import Spider, Request
 
 
 class BibleScraper(Spider):
-    name: str
     output_folder: str
     start_urls: List[str]
     language: str
     code: str
-    splitter: SentSplitter
+    splitter = SentSplitter()
 
     def __init__(
             self,
@@ -25,7 +26,6 @@ class BibleScraper(Spider):
             start_urls: List[str],
             language: str,
             code: str,
-            splitter: SentSplitter,
             filter_nums: bool = False,
             *args, **kwargs
         ):
@@ -34,7 +34,6 @@ class BibleScraper(Spider):
         self.start_urls = start_urls
         self.language = language
         self.code = code
-        self.splitter = splitter
         self.filter_nums = filter_nums
 
     def download_audio(self, audio_src, output_file):
@@ -50,14 +49,21 @@ class BibleScraper(Spider):
             self.download_audio(audio, f"{output_filename}.mp3")
 
     def parse(self, response):
-        content_to_pass = {"ChapterContent_r___3KRx", "ChapterContent_label__R2PLt", "ChapterContent_note__YlDW0",
-                           "ChapterContent_fr__0KsID", "ChapterContent_body__O3qjr", "ft", "w"}
+        content_to_pass = {
+            "ChapterContent_r___3KRx", 
+            "ChapterContent_label__R2PLt", 
+            "ChapterContent_note__YlDW0",
+            "ChapterContent_fr__0KsID", 
+            "ChapterContent_body__O3qjr", 
+            "ft", 
+            "w"
+        }
         title = response.css("h1::text")
         title = title.get()
         book, chapter, code = response.url.split("/")[-1].split(".")[-3:]
         language = self.language
 
-        output_folder = Path(f"{self.output_folder}/raw/{language}")
+        output_folder = Path(f"{self.output_folder}/{language}/raw")
         output_folder.mkdir(exist_ok=True, parents=True)
         output_filename = output_folder / f"{book}_{chapter}_{code}"
 
