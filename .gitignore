@@ -9,7 +9,9 @@ datasets/moore
 steps.md
 uroman/
 fairseq/
-notebooks/
+tutorials/cleaning.ipynb
+tutorials/STEPS_BIBLE_DATASET_CREATION.md
+./pipelines_proverbes_2.sh
 
 
 # Byte-compiled / optimized / DLL files

@@ -1,5 +1,5 @@
 """
-Contes Crawler from https://mooreburkina.com/fr/sitemap.
+Contes Crawler from https://mooreburkina.com/fr/sitemap
 Author: @anyantudre
 """
 

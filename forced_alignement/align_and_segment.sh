@@ -2,10 +2,9 @@
 
 set -e
 
-# defaults
 UROMAN_PATH="../uroman/bin"
 
-# parse named args
+#parse named args
 while [[ "$#" -gt 0 ]]; do
   case $1 in
     --audio_folder) AUDIO_FOLDER="$2"; shift ;;

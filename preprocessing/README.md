@@ -9,8 +9,8 @@ Utilities to prepare raw audio and text data before alignment or dataset prepara
 Example to resample all `.mp3` to `.wav` in a folder:
 ```bash
 bash preprocessing/resample.sh \ 
-  --input_folder datasets/raw/Moore \
-  --output_folder datasets/raw/Moore_resampled
+  --input_folder datasets/moore/bible/raw \
+  --output_folder datasets/moore/bible/resampled
 ```
 
 Contes:

@@ -1,10 +1,8 @@
 #!/bin/bash
 
 # Script for scraping & preprocessing at the same time proverbes Mooré.
-# Usage: bash crawlers/proverbes_website/crawl.sh
-
 # PLEASE DO NOT USE IT FOR NOW, NEED SOME TWEAKS TO MAKE IT WORK
-# PREFER THE PIPELINE SCRIPT
+# PREFER THE PIPELINE SCRIPT IN THE MAIN DIR!!!
 
 
 echo "⌛️ Starting scraping..."

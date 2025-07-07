@@ -1,3 +1,8 @@
+"""
+proverbes Crawler from https://mooreburkina.com/fr/sitemap
+Author: @anyantudre
+"""
+
 from pathlib import Path
 from typing import List
 import requests
@@ -147,7 +152,7 @@ class ProverbesScraper(Spider):
         
         self.logger.info(f"✅ Page traitée: {filename} ({len(texts)} lignes)")
 
-        # navigation vers la page suivante
+        #navig vers la page suivante
         next_url = response.css('a[title="Next Chapter"]::attr(href)').get()
         if next_url and not next_url.strip() == "":
             yield response.follow(next_url, self.parse)
