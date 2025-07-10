@@ -1,5 +1,5 @@
 """
-proverbes Crawler from https://mooreburkina.com/fr/sitemap
+proverbes Crawler for https://mooreburkina.com/fr/sitemap
 Author: @anyantudre
 """
 

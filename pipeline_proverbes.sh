@@ -62,7 +62,7 @@ bash forced_alignement/align_and_segment.sh \
   --text_folder "$RESAMPLED_DIR" \
   --output_folder "$ALIGNED_DIR" \
   --lang mos \
-  --uroman_path ../uroman/bin
+  --uroman_path uroman_tools/bin
 
 echo "☁️  Step 5/5: Pushing to HuggingFace..."
 HF_ARGS="--input_folder $ALIGNED_DIR --repo_id $REPO_ID --split $SPLIT"

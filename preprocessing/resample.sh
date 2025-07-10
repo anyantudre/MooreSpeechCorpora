@@ -24,9 +24,10 @@ fi
 
 mkdir -p "$OUTPUT_FOLDER"
 
-for f in "$INPUT_FOLDER"/*.mp3; do
+for f in "$INPUT_FOLDER"/*.{mp3,wav}; do
+  [[ -f "$f" ]] || continue  # Skip if no files match
   filename="$(basename "$f")"
   stem="${filename%.*}"
   ffmpeg -y -nostdin -i "$f" -ac 1 -ar 16000 "$OUTPUT_FOLDER/${stem}.wav"
-  cp "$INPUT_FOLDER/${stem}.txt" "$OUTPUT_FOLDER/" 2>/dev/null
+  cp "$INPUT_FOLDER/${stem}.txt" "$OUTPUT_FOLDER/" 2>/dev/null || true
 done
