@@ -10,8 +10,17 @@ steps.md
 uroman/
 fairseq/
 tutorials/cleaning.ipynb
+tutorials/merging.ipynb
 tutorials/STEPS_BIBLE_DATASET_CREATION.md
 ./pipelines_proverbes_2.sh
+crawlers/youtube/youtube_scraper.py
+data_export/reverse_hf_to_raw.py
+data_export/reverse_pipeline.sh
+tutorials/temp_cleaning.ipynb
+tutorials/youtube_scraper.py
+preprocessing/sanitize_folder.sh
+preprocessing/convert_audio_to_wav.py
+preprocessing/count_audio_files.py
 
 
 # Byte-compiled / optimized / DLL files

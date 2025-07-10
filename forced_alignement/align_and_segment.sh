@@ -2,7 +2,7 @@
 
 set -e
 
-UROMAN_PATH="../uroman/bin"
+UROMAN_PATH="uroman_tools/bin"
 
 #parse named args
 while [[ "$#" -gt 0 ]]; do
@@ -25,23 +25,26 @@ fi
 
 mkdir -p "$OUTPUT_FOLDER"
 
-cd fairseq
-
-for wavpath in "../$AUDIO_FOLDER"/*.wav; do
+for wavpath in "$AUDIO_FOLDER"/*.wav; do
   filename="$(basename "$wavpath")"
   stem="${filename%.*}"
-  outdir="../$OUTPUT_FOLDER/$stem"
+  outdir="$OUTPUT_FOLDER/$stem"
+
+  # Skip if already processed
+  if [[ -d "$outdir" && -f "$outdir/manifest.json" ]]; then
+    echo "⏭️  Skipping $stem (already processed)"
+    continue
+  fi
 
   rm -rf "$outdir"
 
-  python -m examples.mms.data_prep.align_and_segment \
+  python forced_alignement/data_prep/align_and_segment.py \
     --audio_filepath "$wavpath" \
-    --text_filepath "../$TEXT_FOLDER/${stem}.txt" \
+    --text_filepath "$TEXT_FOLDER/${stem}.txt" \
     --lang "$LANG" \
     --outdir "$outdir" \
-    --uroman "$UROMAN_PATH"
+    --uroman_path "$UROMAN_PATH" \
+    --use_star
 
   echo "✅ Finished aligning $stem → $outdir"
 done
-
-cd ..

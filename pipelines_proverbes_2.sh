@@ -13,7 +13,7 @@
 #   --text_folder datasets/moore/proverbes_moore/vol9/resampled \
 #   --output_folder datasets/moore/proverbes_moore/vol9/aligned \
 #   --lang mos \
-#   --uroman_path ../uroman/bin
+#   --uroman_path uroman_tools/bin
 
 # python datasets/prepare_hf_dataset.py   --input_folder datasets/moore/proverbes_moore/vol9/aligned   --repo_id anyantudre/moore-speech-proverbes-2   --split "vol9"
 
@@ -73,7 +73,7 @@ bash forced_alignement/align_and_segment.sh \
   --text_folder "$RESAMPLED_DIR" \
   --output_folder "$ALIGNED_DIR" \
   --lang mos \
-  --uroman_path ../uroman/bin
+  --uroman_path uroman_tools/bin
 
 echo "☁️  Step 4/4: Pushing to HuggingFace..."
 HF_ARGS="--input_folder $ALIGNED_DIR --repo_id $REPO_ID --split $SPLIT"

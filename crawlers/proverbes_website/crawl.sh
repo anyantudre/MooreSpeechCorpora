@@ -30,7 +30,7 @@ bash forced_alignement/align_and_segment.sh \
   --text_folder datasets/moore/proverbes_moore/vol2/resampled \
   --output_folder datasets/moore/proverbes_moore/vol2/aligned \
   --lang mos \
-  --uroman_path ../uroman/bin
+  --uroman_path uroman_tools/bin
 
 python datasets/prepare_proverbes_dataset.py \
   --input_folder datasets/moore/proverbes_moore/vol2/aligned \
