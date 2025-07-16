@@ -2,7 +2,7 @@
 [![Python 3.10](https://img.shields.io/badge/python-3.10-blue)](https://www.python.org/downloads/release/python-3100/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-Modular tools to collect, preprocess, align, and prepare Mooré speech/text data for **Text-to-Speech (TTS)** and **Automatic Speech Recognition (ASR)**.
+A complete toolkit for building Mooré speech datasets. Collect, preprocess, align, and export high-quality audio/text pairs for **Text-to-Speech (TTS)** and **Automatic Speech Recognition (ASR)**.
 
 This toolkit reproduces the full [Moore Speech Corpora](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora) data collection pipeline.
 
@@ -10,11 +10,11 @@ This toolkit reproduces the full [Moore Speech Corpora](https://huggingface.co/d
 
 ## Table of Contents
 1. [Features](#features)  
-2. [Installation](#installation)  
+2. [Installation & Setup](#installation--setup)  
 3. [Quick Start](#quick-start)  
-4. [Usage](#usage)
-5. [Contributing](#contributing)  
-6. [License](#license)
+4. [Contributing](#contributing)  
+5. [Contacts & Citation](#contacts--citation)
+6. [Acknowledgments](#acknowledgments)
 
 ---
 
@@ -32,12 +32,12 @@ The toolkit is structured as follows:
 moore-toolkit/
 ├─ crawlers/             # Bible, YouTube, etc.
 ├─ preprocessing/        # Resample, normalize text
-├─ forced_alignment/     # MMS scripts & wrappers
-├─ datasets/             # HF dataset prep & push
-├─ utils/                # Shared helpers
+├─ forced_alignement/    # MMS scripts & data_prep tools
+├─ uroman_tools/         # Romanization tools (extracted)
+├─ data_export/          # HF dataset prep & push
 ├─ environment.yml
 └─ README.md
-````
+```
 
 ---
 
@@ -82,10 +82,10 @@ bash forced_alignement/align_and_segment.sh \
   --text_folder datasets/moore/bible/resampled \
   --output_folder datasets/moore/bible/aligned \
   --lang mos \
-  --uroman_path ../uroman/bin
+  --uroman_path uroman_tools/bin
 ```
 
-See [forced\_alignment/README.md](forced_alignment/README.md) for full instructions and more details.
+See [forced_alignement/README.md](forced_alignement/README.md) for full instructions and more details.
 
 * **Dataset Preparation/Export:** uploads dataset with columns: audio, transcription, duration, chapter to Hugging Face Hub.
 
@@ -117,9 +117,34 @@ Contributions are more than welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.
 
 ---
 
+## Contacts & Citation
+
+**Curator:**
+- [Wendyellé A. Alban NYANTUDRE](https://github.com/anyantudre) (@anyantudre)
+- [Aristide BANDAOGO](https://github.com/Bandoss-Ariss) (@Bandoss-Ariss)
+
+**Example Citation:**
+```bibtex
+@misc{anyantudre2025moorespeechcorpora,
+  title        = {Moore Speech Corpora: Toolkit to collect, preprocess, align, and prepare Mooré speech/text data for TTS and ASR.},
+  author       = {Nyantudre, Wendyellé Abubakrh Alban and Bandaogo, Aristide},
+  year         = {2025},
+  howpublished = {Available at \url{https://github.com/anyantudre/MooreSpeechCorpora}},
+  note         = {GO AI Corporation}
+}
+```
+
+**License Compliance:**
+This work builds on several open-source components. When using this toolkit or derived datasets, please:
+- Credit this work using proper citation
+- Comply with all original component licenses (see Acknowledgments)
+- Include appropriate attribution in publications and derived works
+
+---
+
 ## Acknowledgments
 * [cawoylel](https://github.com/cawoylel/): this repo is largely inspired by their excellent work on the Fula language!
-* [Facebook AI Research Fairseq](https://github.com/facebookresearch/fairseq/) for multilingual alignment tools.
+* [Facebook AI Research Fairseq](https://github.com/facebookresearch/fairseq/) for the original MMS alignment tools (adapted in `forced_alignement/data_prep/`).
 * [bible.com](https://www.bible.com/) for Mooré audio/text
-* [Uroman](https://github.com/isi-nlp/uroman) for romanization
+* [Uroman](https://github.com/isi-nlp/uroman) for romanization (tools included in `uroman_tools/`)
 * [Resemble Enhance](https://github.com/resemble-ai/resemble-enhance) for speech enhancement

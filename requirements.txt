@@ -3,6 +3,7 @@ icu-tokenizer==0.0.1
 sox==1.5.0
 librosa==0.11.0 
 datasets==3.6.0
+soundfile==0.12.1
 tensorboardX
 #ffmpeg-python #no need for now
-#fairseq #no need for now
+#fairseq #no need now
