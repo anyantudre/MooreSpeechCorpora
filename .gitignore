@@ -9,6 +9,8 @@ datasets/moore
 steps.md
 uroman/
 fairseq/
+venv/
+pipelines_proverbes_2.sh
 tutorials/cleaning.ipynb
 tutorials/merging.ipynb
 tutorials/STEPS_BIBLE_DATASET_CREATION.md
