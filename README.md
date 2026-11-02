@@ -66,8 +66,10 @@ flowchart LR
     enhance --> known{"Text<br/>known?"}
     known -- yes --> align["align<br/><code>aligned.jsonl</code>"]
     known -- no --> segment["segment<br/><code>segmented.jsonl</code>"]
-    segment --> transcribe["transcribe<br/><code>segmented.jsonl</code>"]
-    align --> filter["filter<br/><code>final.jsonl</code>"]
+    align --> trim["trim<br/>cut to the speech"]
+    segment --> trim
+    trim -- text known --> filter["filter<br/><code>final.jsonl</code>"]
+    trim -- no text --> transcribe["transcribe<br/><code>segmented.jsonl</code>"]
     transcribe --> filter
     filter --> export["export"]
     export --> out[("JSONL manifest<br/>LJSpeech folder<br/>Hugging Face dataset")]
@@ -80,6 +82,7 @@ flowchart LR
 | `enhance` | Optional: keeps only the voice, removing background music (Demucs; `pip install ".[enhance]"`). Meant for cleaner TTS audio: on the Mooré proverbs it did not change alignment or recognition accuracy |
 | `align` | Text known: finds where each sentence is spoken (MMS forced aligner) |
 | `segment` | No text: cuts at pauses into 2 to 15 s clips |
+| `trim` | Cuts each clip to its speech: no music or long silence before the first word or after the last (Demucs; `pip install ".[enhance]"`). Keeps a voice-only copy of each clip |
 | `transcribe` | No text: labels the clips with an ASR model |
 | `filter` | Drops clips that are too short, too long, badly aligned, in another language, or with too little text for their length |
 | `export` | Writes the Hugging Face dataset or LJSpeech folder, and can push to the Hub |
