@@ -1,0 +1,6 @@
+# Western Niger Fulfulde (Niger, eastern Burkina Faso). MMS has no fuh adapter: use "ful".
+code: fuh
+name: Fulfuldé (Western Niger)
+letters: "abɓcdɗefghijklmnɲŋoprstuwyƴ'"
+sentence_end: ".!?"
+mms_code: ful

@@ -1,0 +1,6 @@
+# Alphabet to be checked by a speaker.
+code: gux
+name: Gourmantchéma
+letters: "abcdeɛfghijklmnŋoɔprstuwy"
+sentence_end: ".!?"
+mms_code: gux

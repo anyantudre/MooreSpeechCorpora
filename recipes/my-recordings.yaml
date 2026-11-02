@@ -1,0 +1,9 @@
+# Your own recordings: a folder of audio files, each with an optional .txt transcript
+# (one sentence per line). Files with a transcript are aligned, the others are segmented.
+language: mos              # or the path to your own language file, see src/fasospeechcorpora/languages/
+source:
+  type: local
+  path: path/to/recordings
+steps: [fetch, prepare, align, segment, filter, export]
+export:
+  formats: [manifest, ljspeech]

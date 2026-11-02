@@ -1,0 +1,6 @@
+# Maasina Fulfulde (central Mali, northern Burkina Faso). MMS has no ffm adapter: use "ful".
+code: ffm
+name: Fulfuldé (Maasina)
+letters: "abɓcdɗefghijklmnɲŋoprstuwyƴ'"
+sentence_end: ".!?"
+mms_code: ful
