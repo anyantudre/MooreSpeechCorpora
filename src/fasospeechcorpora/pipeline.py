@@ -71,7 +71,7 @@ class Pipeline:
         log.info("%d recordings, %.2f h", len(rows), manifest.total_hours(rows))
 
     def align(self) -> None:
-        records = [r for r in manifest.read(self.path("prepared.jsonl")) if r.get("lines")]
+        records = [r for r in manifest.read(self.path("prepared.jsonl")) if r.get("lines") or r.get("segments")]
         cfg = self.r.align
         backend = cfg.get("backend", "mms")
         aligner = None
@@ -81,7 +81,9 @@ class Pipeline:
             if cache.exists():
                 out += manifest.read(cache)
                 continue
-            if backend == "fairseq":
+            if rec.get("segments"):                    # timestamps given (e.g. Audacity labels): just cut
+                rows = self._cut_segments(rec)
+            elif backend == "fairseq":
                 rows = self._align_fairseq(rec, cfg)
             else:
                 if aligner is None:
@@ -118,6 +120,16 @@ class Pipeline:
             rows.append(row)
         return rows
 
+    def _cut_segments(self, rec: dict) -> list[dict]:
+        wav = audio.load(self.root / rec["audio_filepath"], self.sr)
+        rows = []
+        for k, seg in enumerate(rec["segments"]):
+            row = self._clip_row(rec, k, seg["text"], seg["start"], seg["end"])
+            audio.save(self.root / row["audio_filepath"], wav[int(seg["start"] * self.sr):int(seg["end"] * self.sr)],
+                       self.sr)
+            rows.append(row)
+        return rows
+
     def _align_fairseq(self, rec: dict, cfg: dict) -> list[dict]:
         from .align import align_fairseq
 
@@ -139,7 +151,7 @@ class Pipeline:
         from .segment import split_on_silence
 
         cfg = self.r.segment
-        records = [r for r in manifest.read(self.path("prepared.jsonl")) if not r.get("lines")]
+        records = [r for r in manifest.read(self.path("prepared.jsonl")) if not r.get("lines") and not r.get("segments")]
         out = []
         for rec in tqdm(records, desc="segment"):
             wav = audio.load(self.root / rec["audio_filepath"], self.sr)
