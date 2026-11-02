@@ -3,6 +3,7 @@ so any step can be re-run alone, and finished work is skipped on the next run.
 
   fetch       -> raw/ + raw.jsonl            download audio (and text) from the source
   prepare     -> wav/ + prepared.jsonl       decode to mono 16 kHz wav
+  enhance     -> voice/ + prepared.jsonl     optional: keep only the voice (removes background music)
   align       -> clips/ + aligned.jsonl      known text: one clip per sentence (forced alignment)
   segment     -> clips/ + segmented.jsonl    no text: one clip per pause-delimited utterance
   transcribe  -> segmented.jsonl             no text: pseudo-labels from an ASR model
@@ -22,7 +23,7 @@ from .config import Recipe
 from .text import foreign_ratio
 
 log = logging.getLogger("fasospeechcorpora")
-STEPS = ["fetch", "prepare", "align", "segment", "transcribe", "filter", "export"]
+STEPS = ["fetch", "prepare", "enhance", "align", "segment", "transcribe", "filter", "export"]
 
 
 class Pipeline:
@@ -69,6 +70,23 @@ class Pipeline:
             rows.append({**rec, "audio_filepath": f"wav/{rec['id']}.wav", "duration": audio.duration(dest)})
         manifest.write(self.path("prepared.jsonl"), rows)
         log.info("%d recordings, %.2f h", len(rows), manifest.total_hours(rows))
+
+    def enhance(self) -> None:
+        from .enhance import VoiceExtractor
+
+        cfg = self.r.enhance
+        rows = manifest.read(self.path("prepared.jsonl"))
+        extractor = None
+        for rec in tqdm(rows, desc="enhance"):
+            if rec.get("original_audio_filepath"):
+                continue                                    # already enhanced
+            dest = self.path(f"voice/{rec['id']}.wav")
+            if not dest.exists():
+                extractor = extractor or VoiceExtractor(cfg.get("model", "htdemucs"), cfg.get("device"))
+                audio.save(dest, extractor(audio.load(self.root / rec["audio_filepath"], self.sr), self.sr), self.sr)
+            rec["original_audio_filepath"], rec["audio_filepath"] = rec["audio_filepath"], f"voice/{rec['id']}.wav"
+        manifest.write(self.path("prepared.jsonl"), rows)
+        log.info("%d recordings reduced to voice", len(rows))
 
     def align(self) -> None:
         records = [r for r in manifest.read(self.path("prepared.jsonl")) if r.get("lines")]

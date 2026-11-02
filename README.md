@@ -62,7 +62,8 @@ A recipe lists the steps to run. Each step reads and writes a JSONL manifest, so
 flowchart LR
     src[("Source<br/>bible.com · SIL ipsapps<br/>YouTube · local folder")] --> fetch
     fetch["fetch<br/><code>raw.jsonl</code>"] --> prepare["prepare<br/><code>prepared.jsonl</code>"]
-    prepare --> known{"Text<br/>known?"}
+    prepare --> enhance(["enhance · optional<br/>voice only, no music"])
+    enhance --> known{"Text<br/>known?"}
     known -- yes --> align["align<br/><code>aligned.jsonl</code>"]
     known -- no --> segment["segment<br/><code>segmented.jsonl</code>"]
     segment --> transcribe["transcribe<br/><code>segmented.jsonl</code>"]
@@ -76,6 +77,7 @@ flowchart LR
 |---|---|
 | `fetch` | Downloads audio (and text) from the source |
 | `prepare` | Decodes to mono 16 kHz wav |
+| `enhance` | Optional: keeps only the voice, removing background music (Demucs; `pip install ".[enhance]"`). Meant for cleaner TTS audio: on the Mooré proverbs it did not change alignment or recognition accuracy |
 | `align` | Text known: finds where each sentence is spoken (MMS forced aligner) |
 | `segment` | No text: cuts at pauses into 2 to 15 s clips |
 | `transcribe` | No text: labels the clips with an ASR model |
@@ -174,7 +176,7 @@ FasoSpeechCorpora is the continuation of MooreSpeechCorpora (this repository's e
 - Splitting at pauses started from [thorstenMueller/Audio-to-Voice-Dataset](https://github.com/thorstenMueller/Audio-to-Voice-Dataset).
 - Alignment uses [MMS](https://github.com/facebookresearch/fairseq/tree/main/examples/mms) by Meta AI through [torchaudio](https://pytorch.org/audio), with [uroman](https://github.com/isi-nlp/uroman) by ISI.
 - The YouTube recipe downloads with [yt-dlp](https://github.com/yt-dlp/yt-dlp) and labels clips with [moore-asr-eval-w2vbert](https://huggingface.co/anyantudre/moore-asr-eval-w2vbert). The Mooré and Dioula speech models from [GO AI Corp](https://huggingface.co/goaicorp) work as well.
-- The denoised audio in MooreSpeechCorpora was made with [Resemble Enhance](https://github.com/resemble-ai/resemble-enhance); see [`tutorials/noise_reduce.ipynb`](tutorials/noise_reduce.ipynb).
+- The `enhance` step uses [Demucs](https://github.com/adefossez/demucs) by Alexandre Défossez, first released by Meta AI. The denoised audio in MooreSpeechCorpora was made with [Resemble Enhance](https://github.com/resemble-ai/resemble-enhance) (see [`tutorials/noise_reduce.ipynb`](tutorials/noise_reduce.ipynb)), which pins PyTorch 2.1 and DeepSpeed and no longer installs next to current PyTorch.
 
 ## Citation
 
