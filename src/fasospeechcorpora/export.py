@@ -6,6 +6,10 @@
              (token from the HF_TOKEN environment variable or a .env file). `gated: manual`
              (or `auto`) makes people request access before they can download it.
 
+With `layout: corpora_v1` the hf export uses the MooreSpeechCorpora columns, in order:
+audio, text, duration, voice, speaker_id, denoised_audio (the voice-only copy from `trim`), then
+source, chapter, alignment_score and cer. Run the `speakers` step first to fill voice and speaker_id.
+
 With `pairs: {translation: fra}` the hf export holds speech translation pairs instead of single
 clips: every clip in the recipe's language next to the translation spoken beside it (see make_pairs).
 The filter must keep both languages (`filter.languages: [mos, fra]`).
@@ -122,6 +126,16 @@ def export(rows: list[dict], root: Path, cfg: dict, language: str = "") -> None:
                   audio_columns={f"{sp}_audio": f"{sp}_audio", f"{tp}_audio": f"{tp}_audio"},
                   order=[k for k in pairs[0] if k != "id"] if pairs else None)
         rows = [r for r in rows if r.get("language") == language]      # ljspeech stays monolingual
+    elif "hf" in formats and cfg.get("layout") == "corpora_v1":
+        v1 = [{"audio": r["audio_filepath"], "text": r["text"], "duration": r["duration"],
+               "voice": r.get("voice"), "speaker_id": r.get("speaker_id"),
+               "denoised_audio": r.get("voice_filepath", r["audio_filepath"]),
+               "source": r.get("source"), "chapter": r.get("chapter", r.get("source_id")),
+               "alignment_score": r.get("score"), "cer": r.get("cer")} for r in rows]
+        order = ["audio", "text", "duration", "voice", "speaker_id", "denoised_audio",
+                 "source", "chapter", "alignment_score", "cer"]
+        to_hf(v1, root, root / "hf", **hub, audio_columns={"audio": "audio", "denoised_audio": "denoised_audio"},
+              keep=tuple(k for k in order if k not in ("audio", "denoised_audio")), order=order)
     elif "hf" in formats:
         to_hf(rows, root, root / "hf", **hub)
     if "ljspeech" in formats:

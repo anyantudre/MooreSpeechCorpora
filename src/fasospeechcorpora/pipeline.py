@@ -7,8 +7,10 @@ so any step can be re-run alone, and finished work is skipped on the next run.
   align       -> clips/ + aligned.jsonl      known text: one clip per sentence (forced alignment)
   segment     -> clips/ + segmented.jsonl    no text: one clip per pause-delimited utterance
   trim        -> trimmed/ + both manifests   cut each clip to its speech (no music or long silence at the ends)
+  verify      -> both manifests              CER of every clip against one or more ASR models
   transcribe  -> segmented.jsonl             no text: pseudo-labels from an ASR model
   filter      -> final.jsonl                 drop bad clips, print a summary
+  speakers    -> final.jsonl + speakers/     group clips by speaker, suggest male/female voices
   export      -> ljspeech/, hf/              training formats, optional Hub upload
 """
 from __future__ import annotations
@@ -24,7 +26,7 @@ from .config import Recipe
 from .text import foreign_ratio
 
 log = logging.getLogger("fasospeechcorpora")
-STEPS = ["fetch", "prepare", "enhance", "align", "segment", "trim", "transcribe", "filter", "export"]
+STEPS = ["fetch", "prepare", "enhance", "align", "segment", "trim", "transcribe", "verify", "filter", "speakers", "export"]
 
 
 class Pipeline:
@@ -235,10 +237,36 @@ class Pipeline:
                 r["text"] = t
             manifest.write(self.path("segmented.jsonl"), rows)      # save progress
 
+    def verify(self) -> None:
+        """CER of every clip with text, for each model in `verify.models`; `cer` is the best of them."""
+        from .transcribe import ASR, cer
+
+        models = self.r.verify.get("models") or [{"model": "facebook/mms-1b-all",
+                                                    "target_lang": self.lang.mms_code or self.lang.code}]
+        for name in ("aligned.jsonl", "segmented.jsonl"):
+            rows = manifest.read(self.path(name))
+            for m in models:
+                key = "cer_" + m["model"].split("/")[-1]
+                todo = [r for r in rows if r.get("text") and key not in r and not r.get("no_voice")]
+                if not todo:
+                    continue
+                asr = ASR(m["model"], m.get("target_lang"), m.get("device"), m.get("batch_size", 8))
+                for i in tqdm(range(0, len(todo), 64), desc=f"verify {key}"):
+                    batch = todo[i:i + 64]
+                    hyps = asr([audio.load(self.root / r["audio_filepath"], self.sr) for r in batch], self.sr)
+                    for r, h in zip(batch, hyps):
+                        r[key] = round(cer(r["text"], h), 4)
+                del asr
+            for r in rows:
+                scores = [v for k, v in r.items() if k.startswith("cer_")]
+                if scores:
+                    r["cer"] = min(scores)
+            manifest.write(self.path(name), rows)
+
     def filter(self) -> None:
         cfg = {"min_duration": 0.5, "max_duration": 30.0, "min_score": 0.2, "max_foreign_ratio": None,
                "min_chars_per_second": 3.0, "max_chars_per_second": None,
-               "max_music_under_voice_db": None, "clean_text": False, "no_digits": False,
+               "max_music_under_voice_db": None, "max_cer": None, "clean_text": False, "no_digits": False,
                "languages": [self.lang.code], **self.r.filter}
         rows = manifest.read(self.path("aligned.jsonl")) + manifest.read(self.path("segmented.jsonl"))
         if cfg["clean_text"]:
@@ -265,6 +293,8 @@ class Pipeline:
             return "no_voice"
         if cfg["no_digits"] and any(c.isdigit() for c in text):
             return "digits"
+        if cfg["max_cer"] is not None and r.get("cer") is not None and r["cer"] > cfg["max_cer"]:
+            return "high_cer"
         if cfg["max_music_under_voice_db"] is not None and r.get("music_under_voice_db", -99) > cfg["max_music_under_voice_db"]:
             return "music_under_voice"
         if cfg["languages"] and r.get("language") not in cfg["languages"]:
@@ -282,6 +312,52 @@ class Pipeline:
         if cfg["max_foreign_ratio"] is not None and foreign_ratio(text, self.lang) > cfg["max_foreign_ratio"]:
             return "foreign_text"
         return None
+
+    def speakers(self) -> None:
+        """Label speakers in final.jsonl. Writes speakers/summary.json and a few example clips per group
+        to listen to. Put corrections in speakers/labels.yaml ({group: {speaker_id: 1, voice: male}})
+        and run the step again to apply them."""
+        import shutil
+
+        import numpy as np
+        import yaml
+
+        from .speakers import SpeakerEmbedder, cluster, median_f0
+
+        cfg = {"model": "microsoft/wavlm-base-plus-sv", "threshold": 0.75, "male_below_hz": 165, **self.r.speakers}
+        rows = manifest.read(self.path("final.jsonl"))
+        if not rows:
+            return
+        out = self.path("speakers")
+        out.mkdir(exist_ok=True)
+        if not all("speaker_group" in r for r in rows):
+            clips = [audio.load(self.root / r.get("voice_filepath", r["audio_filepath"]), self.sr) for r in rows]
+            emb = SpeakerEmbedder(cfg["model"])(clips, self.sr)
+            groups = cluster(emb, cfg["threshold"])
+            for r, g, c in zip(rows, groups, clips):
+                r["speaker_group"], r["f0"] = int(g), median_f0(c, self.sr)
+        summary = {}
+        for g in sorted({r["speaker_group"] for r in rows}):
+            members = [r for r in rows if r["speaker_group"] == g]
+            f0 = [r["f0"] for r in members if r.get("f0")]
+            med = float(np.median(f0)) if f0 else None
+            examples = sorted(members, key=lambda r: -r["duration"])[:3]
+            for k, r in enumerate(examples):
+                shutil.copy2(self.root / r["audio_filepath"], out / f"group{g}_example{k + 1}.wav")
+            summary[g] = {"clips": len(members), "hours": round(sum(r["duration"] for r in members) / 3600, 3),
+                          "median_f0_hz": round(med, 1) if med else None,
+                          "suggested_voice": None if med is None else ("male" if med < cfg["male_below_hz"] else "female"),
+                          "sources": sorted({str(r.get("source")) for r in members})[:5],
+                          "examples": [f"group{g}_example{k + 1}.wav" for k in range(len(examples))]}
+        (out / "summary.json").write_text(__import__("json").dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
+        labels_file = out / "labels.yaml"
+        labels = yaml.safe_load(labels_file.read_text(encoding="utf-8")) if labels_file.exists() else {}
+        for r in rows:
+            lab = (labels or {}).get(r["speaker_group"], {})
+            r["speaker_id"] = int(lab.get("speaker_id", r["speaker_group"] + 1))
+            r["voice"] = lab.get("voice", summary[r["speaker_group"]]["suggested_voice"])
+        manifest.write(self.path("final.jsonl"), rows)
+        log.info("%d speaker groups; listen to speakers/*.wav and edit speakers/labels.yaml to confirm", len(summary))
 
     def export(self) -> None:
         from .export import export
