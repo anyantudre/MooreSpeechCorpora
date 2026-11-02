@@ -1,5 +1,6 @@
-# Mooré proverbs with French translations. Each page's audio reads proverb, translation, proverb,
-# so the aligner gets all three lines and the filter keeps the Mooré clips.
+# Mooré proverbs with French translations. Each page's audio reads proverb, translation, proverb.
+# The hf export pairs each Mooré reading with the French one, in the layout of the published
+# moore-speech-proverbes dataset (moore_audio, moore_text, french_text, french_audio, ...).
 language: mos
 source:
   type: ipsapps
@@ -8,7 +9,11 @@ source:
   translation_language: fra
 align:
   backend: mms
+filter:
+  languages: [mos, fra]    # keep both: the French clips are half of each pair
+  min_score: null           # music under the voice lowers alignment scores; clips at 0.003 still had 20% CER or less
 export:
   formats: [manifest, hf]
-filter:
-  languages: [mos]      # [mos, fra] also keeps the French clips (speech translation pairs)
+  pairs:
+    translation: fra
+    prefixes: [moore, french]   # column names: moore_audio, french_audio, duration_moore, ...
