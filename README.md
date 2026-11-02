@@ -58,9 +58,18 @@ fasospeech check recipes/mos-bible.yaml --sample 50
 
 A recipe lists the steps to run. Each step reads and writes a JSONL manifest, so you can rerun any step on its own, and FasoSpeechCorpora skips work that is already done.
 
-```text
-fetch → prepare → align ─────────────┐
-                → segment → transcribe ┴→ filter → export
+```mermaid
+flowchart LR
+    src[("Source<br/>bible.com · SIL ipsapps<br/>YouTube · local folder")] --> fetch
+    fetch["fetch<br/><code>raw.jsonl</code>"] --> prepare["prepare<br/><code>prepared.jsonl</code>"]
+    prepare --> known{"Text<br/>known?"}
+    known -- yes --> align["align<br/><code>aligned.jsonl</code>"]
+    known -- no --> segment["segment<br/><code>segmented.jsonl</code>"]
+    segment --> transcribe["transcribe<br/><code>segmented.jsonl</code>"]
+    align --> filter["filter<br/><code>final.jsonl</code>"]
+    transcribe --> filter
+    filter --> export["export"]
+    export --> out[("JSONL manifest<br/>LJSpeech folder<br/>Hugging Face dataset")]
 ```
 
 | Step | What it does |
