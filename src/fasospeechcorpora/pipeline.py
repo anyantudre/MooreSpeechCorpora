@@ -6,6 +6,7 @@ so any step can be re-run alone, and finished work is skipped on the next run.
   enhance     -> voice/ + prepared.jsonl     optional: keep only the voice (removes background music)
   align       -> clips/ + aligned.jsonl      known text: one clip per sentence (forced alignment)
   segment     -> clips/ + segmented.jsonl    no text: one clip per pause-delimited utterance
+  trim        -> trimmed/ + both manifests   cut each clip to its speech (no music or long silence at the ends)
   transcribe  -> segmented.jsonl             no text: pseudo-labels from an ASR model
   filter      -> final.jsonl                 drop bad clips, print a summary
   export      -> ljspeech/, hf/              training formats, optional Hub upload
@@ -23,7 +24,7 @@ from .config import Recipe
 from .text import foreign_ratio
 
 log = logging.getLogger("fasospeechcorpora")
-STEPS = ["fetch", "prepare", "enhance", "align", "segment", "transcribe", "filter", "export"]
+STEPS = ["fetch", "prepare", "enhance", "align", "segment", "trim", "transcribe", "filter", "export"]
 
 
 class Pipeline:
@@ -182,6 +183,40 @@ class Pipeline:
         manifest.write(self.path("segmented.jsonl"), out)
         log.info("%d clips, %.2f h", len(out), manifest.total_hours(out))
 
+    def trim(self) -> None:
+        from .enhance import VoiceExtractor
+        from .trim import speech_bounds
+
+        cfg = {"margin": 0.2, "model": "htdemucs", "device": None, **self.r.trim}
+        extractor = None
+        for name in ("aligned.jsonl", "segmented.jsonl"):
+            rows = manifest.read(self.path(name))
+            todo = [r for r in rows if not r.get("trimmed")]
+            for r in tqdm(todo, desc=f"trim {name}"):
+                extractor = extractor or VoiceExtractor(cfg["model"], cfg["device"])
+                wav = audio.load(self.root / r["audio_filepath"], self.sr)
+                voice, music = extractor.split(wav, self.sr)
+                b = speech_bounds(voice, music, self.sr)
+                r["trimmed"] = True
+                if b is None:
+                    r["no_voice"] = True
+                    continue
+                a = max(0, int((b.start - cfg["margin"]) * self.sr))
+                z = min(len(wav), int((b.end + cfg["margin"]) * self.sr))
+                path, vpath = f"trimmed/{r['id']}.wav", f"trimmed_voice/{r['id']}.wav"
+                audio.save(self.root / path, wav[a:z], self.sr)
+                audio.save(self.root / vpath, voice[a:z], self.sr)
+                r.update({"untrimmed_audio_filepath": r["audio_filepath"], "audio_filepath": path,
+                          "voice_filepath": vpath, "duration": round((z - a) / self.sr, 3),
+                          "start": round(r.get("start", 0.0) + a / self.sr, 3),
+                          "end": round(r.get("start", 0.0) + z / self.sr, 3),
+                          "lead_music": round(b.lead_music, 2), "trail_music": round(b.trail_music, 2),
+                          "music_under_voice_db": round(b.music_under_voice_db, 1)})
+            manifest.write(self.path(name), rows)
+            if todo:
+                cut = sum(1 for r in todo if not r.get("no_voice"))
+                log.info("%s: %d clips trimmed, %d with no voice found", name, cut, len(todo) - cut)
+
     def transcribe(self) -> None:
         from .transcribe import ASR
 
@@ -202,7 +237,8 @@ class Pipeline:
 
     def filter(self) -> None:
         cfg = {"min_duration": 0.5, "max_duration": 30.0, "min_score": 0.2, "max_foreign_ratio": None,
-               "min_chars_per_second": 3.0, "max_chars_per_second": None, "languages": [self.lang.code], **self.r.filter}
+               "min_chars_per_second": 3.0, "max_chars_per_second": None,
+               "max_music_under_voice_db": None, "languages": [self.lang.code], **self.r.filter}
         rows = manifest.read(self.path("aligned.jsonl")) + manifest.read(self.path("segmented.jsonl"))
         kept, dropped = [], Counter()
         for r in rows:
@@ -219,6 +255,10 @@ class Pipeline:
         text, d = (r.get("text") or "").strip(), r["duration"]
         if not text:
             return "no_text"
+        if r.get("no_voice"):
+            return "no_voice"
+        if cfg["max_music_under_voice_db"] is not None and r.get("music_under_voice_db", -99) > cfg["max_music_under_voice_db"]:
+            return "music_under_voice"
         if cfg["languages"] and r.get("language") not in cfg["languages"]:
             return "other_language"
         if d < cfg["min_duration"]:
