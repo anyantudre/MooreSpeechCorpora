@@ -31,7 +31,7 @@ dev = ["pytest"]
 
 [project.scripts]
 fasospeechcorpora = "fasospeechcorpora.cli:main"
-faso = "fasospeechcorpora.cli:main"
+fasospeech = "fasospeechcorpora.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/anyantudre/FasoSpeechCorpora"

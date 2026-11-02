@@ -28,7 +28,7 @@ It runs on Linux, macOS, Windows and Colab, on CPU or GPU.
 git clone https://github.com/anyantudre/FasoSpeechCorpora
 cd FasoSpeechCorpora
 pip install -e ".[align,hub]"
-faso run recipes/mos-bible.yaml --limit 2
+fasospeech run recipes/mos-bible.yaml --limit 2
 ```
 
 For a GPU, install the PyTorch build for your CUDA version first (see [pytorch.org](https://pytorch.org/get-started/locally/)).
@@ -51,7 +51,7 @@ Check the result against a speech recognition model (character error rate on a s
 
 ```bash
 pip install "fasospeechcorpora[asr]"
-faso check recipes/mos-bible.yaml --sample 50
+fasospeech check recipes/mos-bible.yaml --sample 50
 ```
 
 ## How it works
@@ -84,7 +84,7 @@ code: dyu                 # ISO 639-3
 name: Dioula
 letters: "abcdeɛfghijklmnɲŋoɔprstuwyz"   # used to drop text in other languages
 sentence_end: ".!?"
-mms_code: dyu             # MMS speech model adapter, used by `faso check`
+mms_code: dyu             # MMS speech model adapter, used by `fasospeech check`
 ```
 
 Then point a recipe at it with `language: dyu`, or at your own file with `language: {file: my-language.yaml}`.
@@ -121,7 +121,7 @@ To build from your own recordings, use `type: local` and put a `.txt` file with 
 | Fulfuldé (Maasina) | ffm | `ffm-bible` (New Testament) | Tested on 2 chapters: CER 6.4% |
 | Fulfuldé (Western Niger) | fuh | `fuh-bible` (New Testament) | Tested on 2 chapters: CER 9.3% |
 
-CER is the character error rate of the MMS speech recognizer (`facebook/mms-1b-all`) on 60 clips, against each clip's text, as reported by `faso check`. It mixes recognizer errors with alignment errors, so treat it as an upper bound on alignment problems. Both Fulfuldé varieties use the MMS `ful` model, which fits Maasina better.
+CER is the character error rate of the MMS speech recognizer (`facebook/mms-1b-all`) on 60 clips, against each clip's text, as reported by `fasospeech check`. It mixes recognizer errors with alignment errors, so treat it as an upper bound on alignment problems. Both Fulfuldé varieties use the MMS `ful` model, which fits Maasina better.
 
 ## Alignment backends
 
