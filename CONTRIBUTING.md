@@ -1,4 +1,4 @@
-# Contributing to VoxFaso 🇧🇫
+# Contributing to FasoSpeechCorpora 🇧🇫
 
 Thank you for being here!
 
@@ -8,7 +8,7 @@ Feel free to:
 - Suggest **ideas or improvements**
 - Open **pull requests**
 - Add **a language file or a recipe** (see the README)
-- Add **a new source** (one class in `src/voxfaso/sources/`)
+- Add **a new source** (one class in `src/fasospeechcorpora/sources/`)
 - Improve **existing code or documentation**
 
 ✅ Just make sure your contribution works and has been tested:

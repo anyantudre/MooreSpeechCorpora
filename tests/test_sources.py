@@ -1,6 +1,6 @@
-from voxfaso.config import load_language
-from voxfaso.sources.bible_com import next_chapter_url, parse_chapter
-from voxfaso.sources.ipsapps import page_lines
+from fasospeechcorpora.config import load_language
+from fasospeechcorpora.sources.bible_com import next_chapter_url, parse_chapter
+from fasospeechcorpora.sources.ipsapps import page_lines
 
 # Shape of a bible.com chapter page (class prefixes are hashed and change between deploys)
 CHAPTER = """

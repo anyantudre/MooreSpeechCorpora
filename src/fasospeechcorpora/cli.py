@@ -1,4 +1,4 @@
-"""Command line: `voxfaso run recipe.yaml`, `voxfaso check recipe.yaml`, `voxfaso languages`."""
+"""Command line: `faso run recipe.yaml`, `faso check recipe.yaml`, `faso languages`."""
 from __future__ import annotations
 
 import argparse
@@ -11,7 +11,7 @@ from .pipeline import STEPS, Pipeline
 
 
 def main(argv: list[str] | None = None) -> None:
-    ap = argparse.ArgumentParser(prog="voxfaso", description="Build speech datasets for any language.")
+    ap = argparse.ArgumentParser(prog="faso", description="Build speech datasets for any language.")
     sub = ap.add_subparsers(dest="command", required=True)
 
     run = sub.add_parser("run", help="run a recipe")

@@ -8,7 +8,7 @@ import requests
 from ..config import Language
 
 SOURCES: dict[str, type["Source"]] = {}
-USER_AGENT = "voxfaso (+https://github.com/anyantudre/MooreSpeechCorpora)"
+USER_AGENT = "fasospeechcorpora (+https://github.com/anyantudre/FasoSpeechCorpora)"
 
 
 def register(name: str):

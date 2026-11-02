@@ -21,7 +21,7 @@ from . import audio, manifest
 from .config import Recipe
 from .text import foreign_ratio
 
-log = logging.getLogger("voxfaso")
+log = logging.getLogger("fasospeechcorpora")
 STEPS = ["fetch", "prepare", "align", "segment", "transcribe", "filter", "export"]
 
 

@@ -20,4 +20,4 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: pip install -e ".[dev]"
       - run: pytest -m "not slow"
-      - run: voxfaso languages
+      - run: faso languages

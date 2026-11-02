@@ -1,5 +1,5 @@
-from voxfaso.config import Language, load_language
-from voxfaso.text import foreign_ratio, split_sentences
+from fasospeechcorpora.config import Language, load_language
+from fasospeechcorpora.text import foreign_ratio, split_sentences
 
 
 def test_split_keeps_closing_quotes():

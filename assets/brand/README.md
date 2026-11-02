@@ -1,22 +1,22 @@
-# VoxFaso logo
+# FasoSpeechCorpora logo
 
-The logo is a balafon, the wooden xylophone with calabash gourds played across Burkina Faso, where VoxFaso started with Mooré. The main logo shows the whole instrument with its mallets. The round seal puts the same drawing in a disc for avatars and favicons.
+The logo is a balafon, the wooden xylophone with calabash gourds played across Burkina Faso, where FasoSpeechCorpora started with Mooré. The main logo shows the whole instrument with its mallets. The round seal puts the same drawing in a disc for avatars and favicons.
 
 ## Versions
 
 | File | Use it for |
 |---|---|
-| `svg/voxfaso-horizontal.svg` | Main logo: README header, slides, website |
-| `svg/voxfaso-stacked.svg` | Square or tall spaces: posters, title slides |
-| `svg/voxfaso-symbol.svg` | The balafon alone, 48 px and up |
-| `svg/voxfaso-symbol-small.svg` | The balafon alone, 24 to 47 px (fewer keys, no mallets) |
-| `svg/voxfaso-seal.svg` | Round avatar: GitHub, Hugging Face, social profiles |
-| `svg/voxfaso-seal-small.svg` | Favicon and anything under 32 px |
-| `svg/voxfaso-wordmark.svg` | The name alone, when the symbol is already on the page |
+| `svg/fasospeechcorpora-horizontal.svg` | Main logo: README header, slides, website |
+| `svg/fasospeechcorpora-stacked.svg` | Square or tall spaces: posters, title slides |
+| `svg/fasospeechcorpora-symbol.svg` | The balafon alone, 48 px and up |
+| `svg/fasospeechcorpora-symbol-small.svg` | The balafon alone, 24 to 47 px (fewer keys, no mallets) |
+| `svg/fasospeechcorpora-seal.svg` | Round avatar: GitHub, Hugging Face, social profiles |
+| `svg/fasospeechcorpora-seal-small.svg` | Favicon and anything under 32 px |
+| `svg/fasospeechcorpora-wordmark.svg` | The name alone, when the symbol is already on the page |
 
 Each logo comes in colour, `-reversed` (for dark backgrounds), `-black` and `-white`. PNG exports are in `png/` and the website icon set is in `web/`.
 
-The letters of the name are custom shapes, not a font. Use the files instead of retyping "VoxFaso".
+The letters of the name are custom shapes, not a font. Use the files instead of retyping "FasoSpeechCorpora".
 
 ## Clear space
 
@@ -48,8 +48,8 @@ Approved pairs: colour logo on white or Shea; reversed logo on Night or Frame; b
 
 ```html
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/svg/voxfaso-horizontal-reversed.svg">
-  <img alt="VoxFaso" src="assets/brand/svg/voxfaso-horizontal.svg" width="420">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/svg/fasospeechcorpora-horizontal-reversed.svg">
+  <img alt="FasoSpeechCorpora" src="assets/brand/svg/fasospeechcorpora-horizontal.svg" width="420">
 </picture>
 ```
 

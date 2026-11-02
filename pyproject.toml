@@ -3,7 +3,7 @@ requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "voxfaso"
+name = "fasospeechcorpora"
 version = "0.1.0"
 description = "Build speech datasets (audio + text) for any language, from Bibles, audio stories, YouTube or your own recordings."
 readme = "README.md"
@@ -26,20 +26,21 @@ asr = ["torch", "transformers>=4.40"]
 youtube = ["yt-dlp[default]", "imageio-ffmpeg"]
 hub = ["datasets[audio]>=3.0", "huggingface_hub"]
 enhance = ["resemble-enhance"]
-all = ["voxfaso[align,asr,youtube,hub]"]
+all = ["fasospeechcorpora[align,asr,youtube,hub]"]
 dev = ["pytest"]
 
 [project.scripts]
-voxfaso = "voxfaso.cli:main"
+fasospeechcorpora = "fasospeechcorpora.cli:main"
+faso = "fasospeechcorpora.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/anyantudre/MooreSpeechCorpora"
+Homepage = "https://github.com/anyantudre/FasoSpeechCorpora"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-voxfaso = ["languages/*.yaml"]
+fasospeechcorpora = ["languages/*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

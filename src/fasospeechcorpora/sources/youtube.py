@@ -1,7 +1,7 @@
 """YouTube videos and playlists, audio only, through yt-dlp.
 
 YouTube's terms forbid downloading without permission: only use content you have the
-right to use. Install with `pip install "voxfaso[youtube]"`; a JavaScript runtime
+right to use. Install with `pip install "fasospeechcorpora[youtube]"`; a JavaScript runtime
 (e.g. Deno) helps yt-dlp with YouTube's player checks.
 """
 from __future__ import annotations

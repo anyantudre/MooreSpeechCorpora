@@ -1,11 +1,11 @@
 import numpy as np
 import soundfile as sf
 
-from voxfaso import manifest
-from voxfaso.config import load_recipe
-from voxfaso.pipeline import Pipeline
-from voxfaso.segment import split_on_silence
-from voxfaso.transcribe import cer
+from fasospeechcorpora import manifest
+from fasospeechcorpora.config import load_recipe
+from fasospeechcorpora.pipeline import Pipeline
+from fasospeechcorpora.segment import split_on_silence
+from fasospeechcorpora.transcribe import cer
 
 SR = 16_000
 

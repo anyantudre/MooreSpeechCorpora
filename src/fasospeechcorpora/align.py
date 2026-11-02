@@ -3,7 +3,7 @@
 Backends
   mms      (default) Meta's MMS aligner through torchaudio, with the pure-Python `uroman`
            romanizer. Works for any language written in (or romanizable to) Latin letters.
-           pip install "voxfaso[align]"; CPU or GPU, Linux, macOS, Windows.
+           pip install "fasospeechcorpora[align]"; CPU or GPU, Linux, macOS, Windows.
   fairseq  (legacy) the original pipeline used to build MooreSpeechCorpora v1: fairseq's
            `examples.mms.data_prep.align_and_segment` + the Perl uroman. Linux only.
            Needs `align.fairseq_dir` and `align.uroman_dir` in the recipe.
