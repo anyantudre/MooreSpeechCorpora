@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "voxfaso"
+version = "0.1.0"
+description = "Build speech datasets (audio + text) for any language, from Bibles, audio stories, YouTube or your own recordings."
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Alban Nyantudre" }]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "parsel",
+    "pyyaml",
+    "requests",
+    "soundfile>=0.12",
+    "soxr",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+align = ["torch", "torchaudio>=2.6", "uroman>=1.3"]
+asr = ["torch", "transformers>=4.40"]
+youtube = ["yt-dlp[default]", "imageio-ffmpeg"]
+hub = ["datasets[audio]>=3.0", "huggingface_hub"]
+enhance = ["resemble-enhance"]
+all = ["voxfaso[align,asr,youtube,hub]"]
+dev = ["pytest"]
+
+[project.scripts]
+voxfaso = "voxfaso.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/anyantudre/MooreSpeechCorpora"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+voxfaso = ["languages/*.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["slow: needs network or large models (deselect with -m 'not slow')"]

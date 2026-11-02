@@ -1,0 +1,15 @@
+# Audio Bible from bible.com. Personal use only: ask the rights holder before publishing a dataset.
+language: ffm
+source:
+  type: bible_com
+  version: 1175
+  abbreviation: FFM
+  start: MAT.1        # this version has New Testament audio only
+align:
+  backend: mms        # or "fairseq" (legacy, Linux): set fairseq_dir and uroman_dir
+filter:
+  max_duration: 30
+export:
+  formats: [manifest, hf]
+  # repo_id: your-name/your-dataset
+  private: true

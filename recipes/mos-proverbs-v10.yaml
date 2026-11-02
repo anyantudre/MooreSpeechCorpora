@@ -1,0 +1,14 @@
+# Mooré proverbs with French translations, one audio file per page (SIL ipsapps, volume 10).
+# Each page reads several proverbs, each followed by its translation.
+language: mos
+source:
+  type: ipsapps
+  mode: chapters
+  start: https://media.ipsapps.org/mos/ora/prv-v10/01-B001-001.html
+  translation_language: fra
+align:
+  backend: mms
+filter:
+  languages: [mos]      # [mos, fra] also keeps the French clips
+export:
+  formats: [manifest, hf]

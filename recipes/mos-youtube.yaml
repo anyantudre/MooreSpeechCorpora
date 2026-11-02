@@ -1,0 +1,15 @@
+# YouTube audio with no transcript: cut at pauses, then label with an ASR model.
+# Only download videos you have permission to use (YouTube's terms forbid it otherwise).
+language: mos
+source:
+  type: youtube
+  urls:
+    - https://www.youtube.com/watch?v=VIDEO_ID
+steps: [fetch, prepare, segment, transcribe, filter, export]
+segment:
+  min_len: 2
+  max_len: 15
+transcribe:
+  model: ArissBandoss/whisper-small-mos   # or facebook/mms-1b-all with target_lang: mos
+export:
+  formats: [manifest]

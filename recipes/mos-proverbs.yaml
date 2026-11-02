@@ -1,0 +1,14 @@
+# Mooré proverbs with French translations. Each page's audio reads proverb, translation, proverb,
+# so the aligner gets all three lines and the filter keeps the Mooré clips.
+language: mos
+source:
+  type: ipsapps
+  mode: timestamps
+  start: https://media.ipsapps.org/mos/ora/p2/01-001-001.html
+  translation_language: fra
+align:
+  backend: mms
+export:
+  formats: [manifest, hf]
+filter:
+  languages: [mos]      # [mos, fra] also keeps the French clips (speech translation pairs)
