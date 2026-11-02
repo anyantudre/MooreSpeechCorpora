@@ -5,12 +5,19 @@
   hf         a Hugging Face `datasets` folder in hf/, pushed to the Hub when `repo_id` is set
              (token from the HF_TOKEN environment variable or a .env file). `gated: manual`
              (or `auto`) makes people request access before they can download it.
+
+With `pairs: {translation: fra}` the hf export holds speech translation pairs instead of single
+clips: every clip in the recipe's language next to the translation spoken beside it (see make_pairs).
+The filter must keep both languages (`filter.languages: [mos, fra]`).
 """
 from __future__ import annotations
 
 import os
 import shutil
+from collections import defaultdict
 from pathlib import Path
+
+from . import manifest
 
 KEEP = ("id", "text", "duration", "language", "source", "source_id", "translation", "score")
 
@@ -28,6 +35,33 @@ def hf_token() -> str | None:
     return None
 
 
+def make_pairs(rows: list[dict], source_lang: str, translation: str,
+               prefixes: tuple[str, str] | None = None) -> list[dict]:
+    """Pair each clip in `source_lang` with the translation clip next to it in the same recording:
+    the one right after it, or else the one right before it. A proverb read "Mooré, French, Mooré"
+    gives two pairs that share the French clip, like the published moore-speech-proverbes dataset."""
+    sp, tp = prefixes or (source_lang, translation)
+    by_source = defaultdict(list)
+    for r in rows:
+        by_source[r.get("source_id", r["id"])].append(r)
+    pairs = []
+    for sid, rs in by_source.items():
+        rs.sort(key=lambda r: r.get("start", 0.0))
+        for i, r in enumerate(rs):
+            if r.get("language") != source_lang:
+                continue
+            nxt = rs[i + 1] if i + 1 < len(rs) else None
+            prev = rs[i - 1] if i > 0 else None
+            t = nxt if nxt and nxt.get("language") == translation else \
+                prev if prev and prev.get("language") == translation else None
+            if t is None:
+                continue
+            pairs.append({"id": r["id"], f"{sp}_audio": r["audio_filepath"], f"{sp}_text": r["text"],
+                          f"{tp}_text": t["text"], f"{tp}_audio": t["audio_filepath"],
+                          f"duration_{sp}": r["duration"], f"duration_{tp}": t["duration"], "chapter": sid})
+    return pairs
+
+
 def to_ljspeech(rows: list[dict], root: Path, out: Path) -> Path:
     wavs = out / "wavs"
     wavs.mkdir(parents=True, exist_ok=True)
@@ -43,12 +77,22 @@ def to_ljspeech(rows: list[dict], root: Path, out: Path) -> Path:
 
 
 def to_hf(rows: list[dict], root: Path, out: Path, repo_id: str | None = None, private: bool = True,
-          test_size: float | None = None, seed: int = 42, config_name: str = "default", gated: str | None = None):
+          test_size: float | None = None, seed: int = 42, config_name: str = "default", gated: str | None = None,
+          audio_columns: dict[str, str] | None = None, keep: tuple[str, ...] | None = None,
+          order: list[str] | None = None):
+    """`audio_columns` maps dataset column -> row key holding a path (default: audio <- audio_filepath)."""
     from datasets import Audio, Dataset
 
-    columns = {k: [r.get(k) for r in rows] for k in KEEP if any(k in r for r in rows)}
-    columns["audio"] = [str(root / r["audio_filepath"]) for r in rows]
-    ds = Dataset.from_dict(columns).cast_column("audio", Audio(sampling_rate=16_000))
+    audio_columns = audio_columns or {"audio": "audio_filepath"}
+    keep = keep or KEEP
+    columns = {k: [r.get(k) for r in rows] for k in keep if any(k in r for r in rows)}
+    for col, key in audio_columns.items():
+        columns[col] = [str(root / r[key]) for r in rows]
+    if order:
+        columns = {k: columns[k] for k in order if k in columns}
+    ds = Dataset.from_dict(columns)
+    for col in audio_columns:
+        ds = ds.cast_column(col, Audio(sampling_rate=16_000))
     ds = ds.train_test_split(test_size=test_size, seed=seed) if test_size else ds
     ds.save_to_disk(str(out))
     if repo_id:
@@ -62,11 +106,23 @@ def to_hf(rows: list[dict], root: Path, out: Path, repo_id: str | None = None, p
     return ds
 
 
-def export(rows: list[dict], root: Path, cfg: dict) -> None:
+def export(rows: list[dict], root: Path, cfg: dict, language: str = "") -> None:
     formats = cfg.get("formats", ["manifest"])
+    hub = dict(repo_id=cfg.get("repo_id"), private=cfg.get("private", True), test_size=cfg.get("test_size"),
+               config_name=cfg.get("config_name", "default"), gated=cfg.get("gated"))
+    pairs_cfg = cfg.get("pairs")
+    if pairs_cfg:
+        tr = pairs_cfg["translation"]
+        sp, tp = pairs_cfg.get("prefixes", (language, tr))
+        pairs = make_pairs(rows, language, tr, (sp, tp))
+        manifest.write(root / "pairs.jsonl", pairs)
+        if "hf" in formats:
+            keep = (f"{sp}_text", f"{tp}_text", f"duration_{sp}", f"duration_{tp}", "chapter")
+            to_hf(pairs, root, root / "hf", **hub, keep=keep,
+                  audio_columns={f"{sp}_audio": f"{sp}_audio", f"{tp}_audio": f"{tp}_audio"},
+                  order=[k for k in pairs[0] if k != "id"] if pairs else None)
+        rows = [r for r in rows if r.get("language") == language]      # ljspeech stays monolingual
+    elif "hf" in formats:
+        to_hf(rows, root, root / "hf", **hub)
     if "ljspeech" in formats:
         to_ljspeech(rows, root, root / "ljspeech")
-    if "hf" in formats:
-        to_hf(rows, root, root / "hf", repo_id=cfg.get("repo_id"), private=cfg.get("private", True),
-              test_size=cfg.get("test_size"), config_name=cfg.get("config_name", "default"),
-              gated=cfg.get("gated"))
