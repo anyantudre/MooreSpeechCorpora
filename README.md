@@ -120,13 +120,15 @@ export:
   gated: manual           # people must request access before downloading
 ```
 
-To build from your own recordings, use `type: local` and put a `.txt` file with one sentence per line next to each audio file. Files without a `.txt` are cut at pauses and transcribed. New source types are a class with one `fetch` method; see [`sources/base.py`](src/fasospeechcorpora/sources/base.py).
+For bilingual sources such as the proverbs (Mooré read with its French translation), `export.pairs` writes speech translation pairs instead of single clips; see [`recipes/mos-proverbs.yaml`](recipes/mos-proverbs.yaml).
+
+To build from your own recordings, use `type: local` and put a `.txt` file next to each audio file. A plain transcript is split into sentences and aligned. An Audacity label file (`start`, `end`, `text` on each line) is cut as it is, so hand-labelled clips need no alignment. Files without a `.txt` are cut at pauses and transcribed. New source types are a class with one `fetch` method; see [`sources/base.py`](src/fasospeechcorpora/sources/base.py).
 
 ## Languages and sources
 
 | Language | Code | Recipe | Status |
 |---|---|---|---|
-| Mooré | mos | `mos-bible`, `mos-proverbs`, `mos-proverbs-v10`, `mos-youtube` | Datasets published |
+| Mooré | mos | `mos-bible`, `mos-tales`, `mos-proverbs`, `mos-proverbs-v10`, `mos-youtube` | Datasets published |
 | Dioula | dyu | `dyu-bible` | Tested on 2 chapters: CER 5.8% |
 | Gourmantchéma | gux | `gux-bible` | Tested on 2 chapters: CER 3.6% |
 | Fulfuldé (Maasina) | ffm | `ffm-bible` (New Testament) | Tested on 2 chapters: CER 6.4% |
@@ -170,7 +172,7 @@ FasoSpeechCorpora waits between requests: 1 s by default (`delay` in the recipe)
 
 ## Credits
 
-FasoSpeechCorpora is the continuation of MooreSpeechCorpora (this repository's earlier name) and absorbs two older repositories, [speech-dataset-generator](https://github.com/anyantudre/speech-dataset-generator) and [moore-data-scraping-bible](https://github.com/anyantudre/moore-data-scraping-bible). Both are archived and read-only; their commit history is part of this repository.
+FasoSpeechCorpora is the continuation of MooreSpeechCorpora (this repository's earlier name) and absorbs three older repositories: [speech-dataset-generator](https://github.com/anyantudre/speech-dataset-generator), [moore-data-scraping-bible](https://github.com/anyantudre/moore-data-scraping-bible) and data-alignment-moore, which built the tales and proverbs datasets. They are archived and read-only; their commit history is part of this repository.
 
 - The first bible.com scraper came from [cawoylel/nlp4all](https://github.com/cawoylel/nlp4all).
 - Splitting at pauses started from [thorstenMueller/Audio-to-Voice-Dataset](https://github.com/thorstenMueller/Audio-to-Voice-Dataset).

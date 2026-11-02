@@ -38,6 +38,29 @@ def page_lines(html: str, line_css: str = "div.txs", translation_classes: tuple 
     return out
 
 
+def reading_lines(page: list[tuple[str, bool]], lang, tlang: str) -> tuple[list[str], list[str]]:
+    """Turn page lines into the lines to align, with their language.
+
+    Monolingual pages (tales) are split into sentences. Bilingual pages (proverbs) keep one line per
+    reading: consecutive lines in the same language are joined, so a proverb printed on two lines
+    stays one clip and pairs with its whole translation."""
+    lines, langs = [], []
+    if not any(is_tr for _, is_tr in page):
+        for text, _ in page:
+            for sentence in split_sentences(text, lang):
+                lines.append(sentence)
+                langs.append(lang.code)
+        return lines, langs
+    for text, is_tr in page:
+        code = tlang if is_tr else lang.code
+        if langs and langs[-1] == code:
+            lines[-1] = f"{lines[-1]} {text}"
+        else:
+            lines.append(text)
+            langs.append(code)
+    return lines, langs
+
+
 @register("ipsapps")
 class IpsApps(Source):
     """Params: start (first page URL), mode ("chapters" | "timestamps"),
@@ -55,11 +78,7 @@ class IpsApps(Source):
             sel = Selector(text=html)
             item_id = url.rstrip("/").split("/")[-1].removesuffix(".html")
             audio_url = sel.css("audio source::attr(src), audio::attr(src)").get()
-            lines, langs = [], []
-            for text, is_translation in page_lines(html, p.get("line_selector", "div.txs")):
-                for sentence in split_sentences(text, self.lang):
-                    lines.append(sentence)
-                    langs.append(tlang if is_translation else self.lang.code)
+            lines, langs = reading_lines(page_lines(html, p.get("line_selector", "div.txs")), self.lang, tlang)
             if len(lines) >= 2 and lines[0] == lines[1]:           # page title repeated as first line
                 lines, langs = lines[1:], langs[1:]
             record = {"id": item_id, "lines": lines, "source": url.split("/ora/")[0]}

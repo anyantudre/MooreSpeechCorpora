@@ -1,0 +1,11 @@
+# Mooré tales: a folder of recordings with their text (one .mp3 + one .txt per tale), such as the
+# 18 SIBALO tales used for moore-speech-contes. Plain-text transcripts are split into sentences
+# and aligned; Audacity label files (start, end, text) are cut as they are.
+language: mos
+source:
+  type: local
+  path: path/to/tales          # e.g. the raw_data folder of anyantudre/data-alignment-moore
+align:
+  backend: mms
+export:
+  formats: [manifest, hf]

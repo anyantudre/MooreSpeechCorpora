@@ -9,6 +9,9 @@ source:
 align:
   backend: mms
 filter:
-  languages: [mos]      # [mos, fra] also keeps the French clips
+  languages: [mos, fra]    # keep both: the French clips are half of each pair
 export:
   formats: [manifest, hf]
+  pairs:
+    translation: fra
+    prefixes: [moore, french]

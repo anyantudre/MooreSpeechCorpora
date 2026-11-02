@@ -90,3 +90,16 @@ def test_enhance_swaps_in_the_voice_track(tmp_path, monkeypatch):
     assert row["audio_filepath"] == "voice/a.wav" and row["original_audio_filepath"] == "wav/a.wav"
     voice, _ = sf.read(tmp_path / "out" / "voice" / "a.wav")
     assert abs(np.abs(voice).max() - 0.15) < 0.01
+
+
+def test_local_labels_are_cut_without_alignment(tmp_path):
+    rec = tmp_path / "recordings"
+    rec.mkdir()
+    sf.write(rec / "a.wav", np.concatenate([tone(3), silence(1), tone(2)]), SR)
+    (rec / "a.txt").write_text("0.0\t3.0\tWẽnnaam yeelame.\n4.0\t6.0\tLa a yɩɩ woto.\n", encoding="utf-8")
+    recipe = tmp_path / "r.yaml"
+    recipe.write_text(f"language: mos\nsource:\n  type: local\n  path: {rec.as_posix()}\n", encoding="utf-8")
+    Pipeline(load_recipe(recipe, tmp_path / "out")).run(["fetch", "prepare", "align", "segment", "filter"])
+    rows = manifest.read(tmp_path / "out" / "final.jsonl")
+    assert [(r["text"], r["duration"]) for r in rows] == [("Wẽnnaam yeelame.", 3.0), ("La a yɩɩ woto.", 2.0)]
+    assert manifest.read(tmp_path / "out" / "segmented.jsonl") == []
