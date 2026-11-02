@@ -84,7 +84,7 @@ flowchart LR
 | `segment` | No text: cuts at pauses into 2 to 15 s clips |
 | `trim` | Cuts each clip to its speech: no music or long silence before the first word or after the last (Demucs; `pip install ".[enhance]"`). Keeps a voice-only copy of each clip |
 | `transcribe` | No text: labels the clips with an ASR model |
-| `filter` | Drops clips that are too short, too long, badly aligned, in another language, or with too little text for their length |
+| `filter` | Drops clips that are too short, too long, badly aligned, in another language, or with too little text for their length. With `clean_text: true` it also tidies transcripts (item numbers, spaces before punctuation, apostrophes, doubled sentences); `no_digits: true` keeps numbers out of TTS data |
 | `export` | Writes the Hugging Face dataset or LJSpeech folder, and can push to the Hub |
 
 Run only some steps with `--steps align,filter`.
@@ -125,7 +125,7 @@ export:
 
 For bilingual sources such as the proverbs (Mooré read with its French translation), `export.pairs` writes speech translation pairs instead of single clips; see [`recipes/mos-proverbs.yaml`](recipes/mos-proverbs.yaml).
 
-To build from your own recordings, use `type: local` and put a `.txt` file next to each audio file. A plain transcript is split into sentences and aligned. An Audacity label file (`start`, `end`, `text` on each line) is cut as it is, so hand-labelled clips need no alignment. Files without a `.txt` are cut at pauses and transcribed. New source types are a class with one `fetch` method; see [`sources/base.py`](src/fasospeechcorpora/sources/base.py).
+To build from your own recordings, use `type: local` and put a `.txt` file next to each audio file. A plain transcript is split into sentences and aligned. An Audacity label file (`start`, `end`, `text` on each line) is cut as it is, so hand-labelled clips need no alignment. Files without a `.txt` are cut at pauses and transcribed. To re-process an existing Hugging Face dataset (trim, clean, filter its clips again), use `type: hf_dataset` with the `repo`, `splits` and `text_column`. New source types are a class with one `fetch` method; see [`sources/base.py`](src/fasospeechcorpora/sources/base.py).
 
 ## Languages and sources
 

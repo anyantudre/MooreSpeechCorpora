@@ -41,3 +41,26 @@ def foreign_ratio(text: str, lang: Language) -> float:
         base = unicodedata.normalize("NFD", c)[0]
         return c in allowed or base in allowed
     return sum(not ok(c) for c in letters) / len(letters)
+
+
+def clean_text(text: str) -> str:
+    """Tidy a transcript for training without changing its words.
+
+    Drops a leading item number ("7 Põor naaf…"), the space before punctuation ("kibare ."),
+    dialogue dashes after a colon (":- Ad-y"), unifies apostrophes (’ ‘ ` -> ') and spaces,
+    and keeps one copy of a sentence printed twice in a row.
+    """
+    t = normalize(text)
+    t = re.sub(r"^\d+[.)]?\s+", "", t)
+    t = re.sub(r"[’‘`]", "'", t)
+    t = re.sub(r":\s*-\s*", ": ", t)
+    t = re.sub(r"\s+([.,!?;:»])", r"\1", t)
+    t = re.sub(r"«\s+", "«", t)
+    t = normalize(t)
+    sentences = re.split(r"(?<=[.!?»])\s+", t)
+    half = len(sentences) // 2
+    if half and len(sentences) % 2 == 0:                          # "X. X." printed twice
+        a, b = " ".join(sentences[:half]), " ".join(sentences[half:])
+        if re.sub(r"\W", "", a) == re.sub(r"\W", "", b):
+            return b                                              # the second copy has the cleaner spacing
+    return t
