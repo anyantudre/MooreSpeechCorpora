@@ -17,7 +17,7 @@ segment:
   min_len: 2
   max_len: 15
 transcribe:
-  model: goaicorp/mos-whisper-small      # gated: request access on Hugging Face and set HF_TOKEN
+  model: anyantudre/moore-asr-eval-w2vbert   # gated: request access on Hugging Face and set HF_TOKEN
   # or the open model: facebook/mms-1b-all with target_lang: mos
 export:
   formats: [manifest]

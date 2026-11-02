@@ -60,6 +60,7 @@ def test_filter_rules(tmp_path):
         {"id": "short", "text": "Ee.", "duration": 0.2, "language": "mos"},
         {"id": "fra", "text": "Clémence.", "duration": 2.0, "language": "fra"},
         {"id": "low", "text": "Wẽnnaam.", "duration": 2.0, "language": "mos", "score": 0.1},
+        {"id": "jingle", "text": "s", "duration": 11.6, "language": "mos"},
     ]
     manifest.write(tmp_path / "aligned.jsonl", rows)
     pipe.filter()

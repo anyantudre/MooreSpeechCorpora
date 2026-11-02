@@ -172,7 +172,7 @@ class Pipeline:
 
     def filter(self) -> None:
         cfg = {"min_duration": 0.5, "max_duration": 30.0, "min_score": 0.2, "max_foreign_ratio": None,
-               "max_chars_per_second": None, "languages": [self.lang.code], **self.r.filter}
+               "min_chars_per_second": 3.0, "max_chars_per_second": None, "languages": [self.lang.code], **self.r.filter}
         rows = manifest.read(self.path("aligned.jsonl")) + manifest.read(self.path("segmented.jsonl"))
         kept, dropped = [], Counter()
         for r in rows:
@@ -197,6 +197,8 @@ class Pipeline:
             return "too_long"
         if cfg["min_score"] is not None and r.get("score") is not None and r["score"] < cfg["min_score"]:
             return "low_score"
+        if cfg["min_chars_per_second"] and len(text) / d < cfg["min_chars_per_second"]:
+            return "too_little_text"            # music or noise labelled with a stray letter
         if cfg["max_chars_per_second"] and len(text) / d > cfg["max_chars_per_second"]:
             return "too_fast"
         if cfg["max_foreign_ratio"] is not None and foreign_ratio(text, self.lang) > cfg["max_foreign_ratio"]:

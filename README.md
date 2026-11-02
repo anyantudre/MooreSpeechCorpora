@@ -68,7 +68,7 @@ fetch → prepare → align ─────────────┐
 | `align` | Text known: finds where each sentence is spoken (MMS forced aligner) |
 | `segment` | No text: cuts at pauses into 2 to 15 s clips |
 | `transcribe` | No text: labels the clips with an ASR model |
-| `filter` | Drops clips that are too short, too long, badly aligned or in another language |
+| `filter` | Drops clips that are too short, too long, badly aligned, in another language, or with too little text for their length |
 | `export` | Writes the Hugging Face dataset or LJSpeech folder, and can push to the Hub |
 
 Run only some steps with `--steps align,filter`.
@@ -157,7 +157,7 @@ VoxFaso merges three earlier repositories: MooreSpeechCorpora, [speech-dataset-g
 - The first bible.com scraper came from [cawoylel/nlp4all](https://github.com/cawoylel/nlp4all).
 - Splitting at pauses started from [thorstenMueller/Audio-to-Voice-Dataset](https://github.com/thorstenMueller/Audio-to-Voice-Dataset).
 - Alignment uses [MMS](https://github.com/facebookresearch/fairseq/tree/main/examples/mms) by Meta AI through [torchaudio](https://pytorch.org/audio), with [uroman](https://github.com/isi-nlp/uroman) by ISI.
-- The YouTube recipe labels clips with a Mooré Whisper model from [GO AI Corp](https://huggingface.co/goaicorp) and downloads with [yt-dlp](https://github.com/yt-dlp/yt-dlp).
+- The YouTube recipe downloads with [yt-dlp](https://github.com/yt-dlp/yt-dlp) and labels clips with [moore-asr-eval-w2vbert](https://huggingface.co/anyantudre/moore-asr-eval-w2vbert). The Mooré and Dioula speech models from [GO AI Corp](https://huggingface.co/goaicorp) work as well.
 - The denoised audio in MooreSpeechCorpora was made with [Resemble Enhance](https://github.com/resemble-ai/resemble-enhance); see [`tutorials/noise_reduce.ipynb`](tutorials/noise_reduce.ipynb).
 
 ## Citation
