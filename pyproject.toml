@@ -25,7 +25,7 @@ align = ["torch", "torchaudio>=2.6", "uroman>=1.3"]
 asr = ["torch", "transformers>=4.40"]
 youtube = ["yt-dlp[default]", "imageio-ffmpeg"]
 hub = ["datasets[audio]>=3.0", "huggingface_hub"]
-enhance = ["resemble-enhance"]
+enhance = ["demucs>=4.1"]
 all = ["fasospeechcorpora[align,asr,youtube,hub]"]
 dev = ["pytest"]
 

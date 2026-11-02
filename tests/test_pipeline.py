@@ -67,6 +67,31 @@ def test_filter_rules(tmp_path):
     assert [r["id"] for r in manifest.read(tmp_path / "final.jsonl")] == ["ok"]
 
 
+def test_enhance_swaps_in_the_voice_track(tmp_path, monkeypatch):
+    import fasospeechcorpora.enhance as enhance
+
+    class HalfVolume:                       # stands in for Demucs, which needs a model download
+        def __init__(self, *a, **k):
+            pass
+
+        def __call__(self, wav, sample_rate):
+            return wav * 0.5
+
+    monkeypatch.setattr(enhance, "VoiceExtractor", HalfVolume)
+    rec = tmp_path / "recordings"
+    rec.mkdir()
+    sf.write(rec / "a.wav", tone(2), SR)
+    recipe = tmp_path / "r.yaml"
+    recipe.write_text(f"language: mos\nsource:\n  type: local\n  path: {rec.as_posix()}\n", encoding="utf-8")
+    pipe = Pipeline(load_recipe(recipe, tmp_path / "out"))
+    pipe.run(["fetch", "prepare", "enhance"])
+    pipe.run(["enhance"])                    # second run is a no-op
+    row = manifest.read(tmp_path / "out" / "prepared.jsonl")[0]
+    assert row["audio_filepath"] == "voice/a.wav" and row["original_audio_filepath"] == "wav/a.wav"
+    voice, _ = sf.read(tmp_path / "out" / "voice" / "a.wav")
+    assert abs(np.abs(voice).max() - 0.15) < 0.01
+
+
 def test_local_labels_are_cut_without_alignment(tmp_path):
     rec = tmp_path / "recordings"
     rec.mkdir()

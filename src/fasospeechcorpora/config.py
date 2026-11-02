@@ -30,6 +30,7 @@ class Recipe:
     output_dir: Path
     steps: list[str] = field(default_factory=lambda: ["fetch", "prepare", "align", "filter", "export"])
     sample_rate: int = 16_000
+    enhance: dict[str, Any] = field(default_factory=dict)
     align: dict[str, Any] = field(default_factory=dict)
     segment: dict[str, Any] = field(default_factory=dict)
     transcribe: dict[str, Any] = field(default_factory=dict)
