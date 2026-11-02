@@ -32,6 +32,8 @@ class Recipe:
     sample_rate: int = 16_000
     enhance: dict[str, Any] = field(default_factory=dict)
     trim: dict[str, Any] = field(default_factory=dict)
+    verify: dict[str, Any] = field(default_factory=dict)
+    speakers: dict[str, Any] = field(default_factory=dict)
     align: dict[str, Any] = field(default_factory=dict)
     segment: dict[str, Any] = field(default_factory=dict)
     transcribe: dict[str, Any] = field(default_factory=dict)
