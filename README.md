@@ -118,6 +118,8 @@ export:
   gated: manual           # people must request access before downloading
 ```
 
+For bilingual sources such as the proverbs (Mooré read with its French translation), `export.pairs` writes speech translation pairs instead of single clips; see [`recipes/mos-proverbs.yaml`](recipes/mos-proverbs.yaml).
+
 To build from your own recordings, use `type: local` and put a `.txt` file next to each audio file. A plain transcript is split into sentences and aligned. An Audacity label file (`start`, `end`, `text` on each line) is cut as it is, so hand-labelled clips need no alignment. Files without a `.txt` are cut at pauses and transcribed. New source types are a class with one `fetch` method; see [`sources/base.py`](src/fasospeechcorpora/sources/base.py).
 
 ## Languages and sources

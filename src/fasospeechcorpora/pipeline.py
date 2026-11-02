@@ -221,7 +221,7 @@ class Pipeline:
         from .export import export
 
         rows = manifest.read(self.path("final.jsonl"))
-        export(rows, self.root, self.r.export)
+        export(rows, self.root, self.r.export, self.lang.code)
         log.info("exported %d clips (%.2f h)", len(rows), manifest.total_hours(rows))
 
     # ---- quality check -----------------------------------------------------------------------

@@ -1,7 +1,7 @@
 from fasospeechcorpora.config import load_language
 from fasospeechcorpora.sources.bible_com import next_chapter_url, parse_chapter
 from fasospeechcorpora.sources.local import read_text_file
-from fasospeechcorpora.sources.ipsapps import page_lines
+from fasospeechcorpora.sources.ipsapps import page_lines, reading_lines
 
 # Shape of a bible.com chapter page (class prefixes are hashed and change between deploys)
 CHAPTER = """
@@ -53,6 +53,21 @@ def test_ipsapps_lines_join_drop_caps_and_detect_translation():
         ("Ka reng roog la gõeem ye.", False),
         ("La perdrix dit que tant qu’il y a la vie.", True),
     ]
+
+
+def test_bilingual_page_keeps_one_line_per_reading():
+    mos = load_language("mos")
+    page = [("Zĩrẽ zoeta yʋʋm tusri,", False), ("tɩ sɩd wa yõk-a raar a ye.", False),
+            ("En une journée de course,", True), ("la vérité rattrape le mensonge.", True),
+            ("Zĩrẽ zoeta yʋʋm tusri,", False), ("tɩ sɩd wa yõk-a raar a ye.", False)]
+    lines, langs = reading_lines(page, mos, "fra")
+    assert langs == ["mos", "fra", "mos"]
+    assert lines[0] == "Zĩrẽ zoeta yʋʋm tusri, tɩ sɩd wa yõk-a raar a ye."
+
+
+def test_monolingual_page_is_split_into_sentences():
+    lines, langs = reading_lines([("A ra yaa. B ra be.", False)], load_language("mos"), "fra")
+    assert lines == ["A ra yaa.", "B ra be."] and langs == ["mos", "mos"]
 
 
 def test_local_transcript_is_split_into_sentences(tmp_path):
