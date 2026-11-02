@@ -65,3 +65,16 @@ def test_filter_rules(tmp_path):
     manifest.write(tmp_path / "aligned.jsonl", rows)
     pipe.filter()
     assert [r["id"] for r in manifest.read(tmp_path / "final.jsonl")] == ["ok"]
+
+
+def test_local_labels_are_cut_without_alignment(tmp_path):
+    rec = tmp_path / "recordings"
+    rec.mkdir()
+    sf.write(rec / "a.wav", np.concatenate([tone(3), silence(1), tone(2)]), SR)
+    (rec / "a.txt").write_text("0.0\t3.0\tWẽnnaam yeelame.\n4.0\t6.0\tLa a yɩɩ woto.\n", encoding="utf-8")
+    recipe = tmp_path / "r.yaml"
+    recipe.write_text(f"language: mos\nsource:\n  type: local\n  path: {rec.as_posix()}\n", encoding="utf-8")
+    Pipeline(load_recipe(recipe, tmp_path / "out")).run(["fetch", "prepare", "align", "segment", "filter"])
+    rows = manifest.read(tmp_path / "out" / "final.jsonl")
+    assert [(r["text"], r["duration"]) for r in rows] == [("Wẽnnaam yeelame.", 3.0), ("La a yɩɩ woto.", 2.0)]
+    assert manifest.read(tmp_path / "out" / "segmented.jsonl") == []

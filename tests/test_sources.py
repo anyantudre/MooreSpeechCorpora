@@ -1,5 +1,6 @@
 from fasospeechcorpora.config import load_language
 from fasospeechcorpora.sources.bible_com import next_chapter_url, parse_chapter
+from fasospeechcorpora.sources.local import read_text_file
 from fasospeechcorpora.sources.ipsapps import page_lines
 
 # Shape of a bible.com chapter page (class prefixes are hashed and change between deploys)
@@ -52,3 +53,20 @@ def test_ipsapps_lines_join_drop_caps_and_detect_translation():
         ("Ka reng roog la gõeem ye.", False),
         ("La perdrix dit que tant qu’il y a la vie.", True),
     ]
+
+
+def test_local_transcript_is_split_into_sentences(tmp_path):
+    f = tmp_path / "tale.txt"
+    f.write_text("Nin-kẽem a yembr kibare.\nNin-kẽem a yembr n wa n yik a zak pʋgẽ. La, a bi-bilf yikame.\n",
+                 encoding="utf-8")
+    assert read_text_file(f, load_language("mos")) == {"lines": [
+        "Nin-kẽem a yembr kibare.", "Nin-kẽem a yembr n wa n yik a zak pʋgẽ.", "La, a bi-bilf yikame."]}
+
+
+def test_local_audacity_labels_become_segments(tmp_path):
+    f = tmp_path / "tale.txt"
+    f.write_text("0.000000\t5.350000\tNin-kẽem a yembr kibare.\n5.36, 10.15, \"La, a bi-bilf yikame.\"\n",
+                 encoding="utf-8")
+    assert read_text_file(f, load_language("mos")) == {"segments": [
+        {"start": 0.0, "end": 5.35, "text": "Nin-kẽem a yembr kibare."},
+        {"start": 5.36, "end": 10.15, "text": "La, a bi-bilf yikame."}]}
