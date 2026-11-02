@@ -62,7 +62,7 @@ def make_pairs(rows: list[dict], source_lang: str, translation: str,
                 continue
             pairs.append({"id": r["id"], f"{sp}_audio": r["audio_filepath"], f"{sp}_text": r["text"],
                           f"{tp}_text": t["text"], f"{tp}_audio": t["audio_filepath"],
-                          f"duration_{sp}": r["duration"], f"duration_{tp}": t["duration"], "chapter": sid})
+                          f"duration_{sp}": r["duration"], f"duration_{tp}": t["duration"], "chapter": r.get("chapter", sid)})
     return pairs
 
 

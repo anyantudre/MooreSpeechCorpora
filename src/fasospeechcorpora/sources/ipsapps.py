@@ -63,25 +63,39 @@ def reading_lines(page: list[tuple[str, bool]], lang, tlang: str) -> tuple[list[
 
 @register("ipsapps")
 class IpsApps(Source):
-    """Params: start (first page URL), mode ("chapters" | "timestamps"),
-    translation_language (default "fra"), line_selector (default "div.txs")."""
+    """Params: start (first page URL, or a list of first pages, one per book), mode ("chapters" |
+    "timestamps"), translation_language (default "fra"), line_selector (default "div.txs").
+    With several books, clip ids start with the book name (page ids repeat between books)."""
 
     def fetch(self, raw_dir: Path) -> list[dict]:
+        starts = self.params["start"]
+        starts = [starts] if isinstance(starts, str) else list(starts)
+        records = []
+        for start in starts:
+            book = start.split("/ora/")[-1].split("/")[0] if len(starts) > 1 else ""
+            records += self._fetch_book(start, book, raw_dir, self.limit and self.limit - len(records))
+            if self.limit and len(records) >= self.limit:
+                break
+        return records
+
+    def _fetch_book(self, url: str, book: str, raw_dir: Path, limit: int | None) -> list[dict]:
         p = self.params
         mode = p.get("mode", "chapters")
         tlang = p.get("translation_language", "fra")
-        url = p["start"]
+        prefix = f"{book}-" if book else ""
         records = []
         book_audio, book_wav = None, None
-        while url and (self.limit is None or len(records) < self.limit):
+        while url and (not limit or len(records) < limit):
             html = self.get(url).text
             sel = Selector(text=html)
-            item_id = url.rstrip("/").split("/")[-1].removesuffix(".html")
+            page = url.rstrip("/").split("/")[-1].removesuffix(".html")
+            item_id = prefix + page
             audio_url = sel.css("audio source::attr(src), audio::attr(src)").get()
             lines, langs = reading_lines(page_lines(html, p.get("line_selector", "div.txs")), self.lang, tlang)
             if len(lines) >= 2 and lines[0] == lines[1]:           # page title repeated as first line
                 lines, langs = lines[1:], langs[1:]
-            record = {"id": item_id, "lines": lines, "source": url.split("/ora/")[0]}
+            record = {"id": item_id, "lines": lines, "source": url.split("/ora/")[0] + "/ora/" + (book or ""),
+                      "meta": {"chapter": page, **({"book": book} if book else {})}}
             if tlang in langs:
                 record["line_languages"] = langs
                 record["translation"] = " ".join(t for t, l in zip(lines, langs) if l == tlang)
@@ -93,7 +107,7 @@ class IpsApps(Source):
                 stop = re.search(r"var stopTime\s*=\s*([\d.]+)", html)
                 if start and stop:
                     if book_audio is None:
-                        book_audio = self.download(urljoin(url, audio_url), raw_dir / "book.mp3")
+                        book_audio = self.download(urljoin(url, audio_url), raw_dir / f"{prefix}book.mp3")
                     clip = raw_dir / f"{item_id}.wav"
                     if not clip.exists():
                         if book_wav is None:

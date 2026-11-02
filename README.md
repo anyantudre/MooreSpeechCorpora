@@ -129,6 +129,17 @@ For bilingual sources such as the proverbs (Mooré read with its French translat
 
 To build from your own recordings, use `type: local` and put a `.txt` file next to each audio file. A plain transcript is split into sentences and aligned. An Audacity label file (`start`, `end`, `text` on each line) is cut as it is, so hand-labelled clips need no alignment. Files without a `.txt` are cut at pauses and transcribed. To re-process an existing Hugging Face dataset (trim, clean, filter its clips again), use `type: hf_dataset` with the `repo`, `splits` and `text_column`. New source types are a class with one `fetch` method; see [`sources/base.py`](src/fasospeechcorpora/sources/base.py).
 
+## Combine several sources
+
+A dataset often mixes sources, such as proverbs, tales and riddles. Run one recipe per source, merge the results, then label speakers and export once:
+
+```bash
+fasospeech combine data/proverbs-p data/tales-v1 data/riddles-v1 --output data/moore-v2
+fasospeech run recipes/moore-v2/combine.yaml --output data/moore-v2
+```
+
+`recipes/moore-v2/` holds the recipes that build MooreSpeechCorporaV2.
+
 ## Languages and sources
 
 | Language | Code | Recipe | Status |

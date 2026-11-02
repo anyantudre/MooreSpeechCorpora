@@ -1,0 +1,32 @@
+# MooreSpeechCorporaV2: proverbs p1 to p8 (SIL ipsapps; one audio file per book, timestamps per page).
+# Pages read the proverb, its French translation, then the proverb again; V2 keeps the Mooré readings.
+language: mos
+source:
+  type: ipsapps
+  mode: timestamps
+  translation_language: fra
+  start:
+    - https://media.ipsapps.org/mos/ora/p1/01-001-001.html
+    - https://media.ipsapps.org/mos/ora/p2/01-001-001.html
+    - https://media.ipsapps.org/mos/ora/p3/01-B001-001.html
+    - https://media.ipsapps.org/mos/ora/p4/01-B001-001.html
+    - https://media.ipsapps.org/mos/ora/p5/01-001-001.html
+    - https://media.ipsapps.org/mos/ora/p6/01-001-001.html
+    - https://media.ipsapps.org/mos/ora/p7/01-001-001.html
+    - https://media.ipsapps.org/mos/ora/p8/01-001-001.html
+steps: [fetch, prepare, align, trim, verify, filter]
+trim:
+  margin: 0.2
+verify:
+  models:
+    - {model: facebook/mms-1b-all, target_lang: mos}
+    - {model: anyantudre/moore-asr-eval-w2vbert}     # gated: request access, set HF_TOKEN
+filter:
+  languages: [mos]
+  min_score: null            # music lowers alignment scores; CER is the quality gate instead
+  max_cer: 0.25
+  min_duration: 0.8
+  max_duration: 20
+  max_music_under_voice_db: -30
+  clean_text: true
+  no_digits: true

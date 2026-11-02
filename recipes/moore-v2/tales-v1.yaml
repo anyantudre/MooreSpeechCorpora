@@ -1,0 +1,25 @@
+# MooreSpeechCorporaV2: tales vol3 to vol5 from moore-speech-contes. Their original books are not
+# known, so the published clips are re-processed (trimmed, cleaned, scored, filtered).
+language: mos
+source:
+  type: hf_dataset
+  repo: anyantudre/moore-speech-contes
+  splits: [vol3, vol4, vol5]
+  text_column: transcription
+  keep_columns: [chapter]
+steps: [fetch, prepare, align, trim, verify, filter]
+trim:
+  margin: 0.2
+verify:
+  models:
+    - {model: facebook/mms-1b-all, target_lang: mos}
+    - {model: anyantudre/moore-asr-eval-w2vbert}     # gated: request access, set HF_TOKEN
+filter:
+  languages: [mos]
+  min_score: null            # music lowers alignment scores; CER is the quality gate instead
+  max_cer: 0.25
+  min_duration: 0.8
+  max_duration: 20
+  max_music_under_voice_db: -30
+  clean_text: true
+  no_digits: true
