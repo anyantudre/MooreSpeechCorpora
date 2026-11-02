@@ -1,9 +1,0 @@
-datasets
-huggingface-hub
-soundfile
-librosa
-pydub 
-ffmpeg-python
-pandas
-python-dotenv 
-nltk
