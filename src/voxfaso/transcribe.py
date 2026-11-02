@@ -17,7 +17,10 @@ class ASR:
 
         device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         kwargs = {"target_lang": target_lang, "ignore_mismatched_sizes": True} if target_lang else {}
-        self.pipe = pipeline("automatic-speech-recognition", model=model, device=device, model_kwargs=kwargs)
+        from .export import hf_token
+
+        self.pipe = pipeline("automatic-speech-recognition", model=model, device=device, model_kwargs=kwargs,
+                             token=hf_token())          # needed for gated models
         self.batch_size = batch_size
 
     def __call__(self, clips: list[np.ndarray], sample_rate: int = 16_000) -> list[str]:

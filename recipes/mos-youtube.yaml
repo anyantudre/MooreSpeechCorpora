@@ -1,15 +1,23 @@
-# YouTube audio with no transcript: cut at pauses, then label with an ASR model.
-# Only download videos you have permission to use (YouTube's terms forbid it otherwise).
+# Mooré TV audio from BF1TV on YouTube (links from the old speech-dataset-generator list).
+# No transcript: cut at pauses, then label with an ASR model. For private research only:
+# YouTube's terms do not allow downloading without the rights holder's permission.
+# The two playlists are long (2,203 and 134 videos): use --limit N to take N videos per link.
 language: mos
 source:
   type: youtube
   urls:
-    - https://www.youtube.com/watch?v=VIDEO_ID
+    - https://www.youtube.com/watch?v=Rkit4YUvTDs        # Le Journal en Mooré, 10 July 2023
+    - https://www.youtube.com/watch?v=PNJjXdbhX1o        # Le Journal en Mooré, 5 October 2022
+    - https://www.youtube.com/watch?v=JdLAX6SoQTo        # Inside China en langue Mooré
+    - https://www.youtube.com/watch?v=Rxug5pIRTXk        # Flash Back Mooré 2022
+    - https://www.youtube.com/playlist?list=PLafvIliUVicSDTh6TGnlOAp7PBnWJ5zeF   # Journal en Mooré
+    - https://www.youtube.com/playlist?list=PL9hpUeMCwCz6D3Ofs5oXfo5nBB0mfvCAE   # Sid bi zîrî
 steps: [fetch, prepare, segment, transcribe, filter, export]
 segment:
   min_len: 2
   max_len: 15
 transcribe:
-  model: ArissBandoss/whisper-small-mos   # or facebook/mms-1b-all with target_lang: mos
+  model: goaicorp/mos-whisper-small      # gated: request access on Hugging Face and set HF_TOKEN
+  # or the open model: facebook/mms-1b-all with target_lang: mos
 export:
   formats: [manifest]

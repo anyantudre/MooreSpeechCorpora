@@ -152,12 +152,12 @@ VoxFaso waits between requests: 1 s by default (`delay` in the recipe) and 5 to 
 
 ## Credits
 
-VoxFaso merges three earlier repositories: MooreSpeechCorpora, [speech-dataset-generator](https://github.com/anyantudre/speech-dataset-generator) and [moore-data-scraping-bible](https://github.com/anyantudre/moore-data-scraping-bible). Their commit history is part of this repository.
+VoxFaso merges three earlier repositories: MooreSpeechCorpora, [speech-dataset-generator](https://github.com/anyantudre/speech-dataset-generator) and [moore-data-scraping-bible](https://github.com/anyantudre/moore-data-scraping-bible). The last two are archived and read-only; their commit history is part of this repository.
 
 - The first bible.com scraper came from [cawoylel/nlp4all](https://github.com/cawoylel/nlp4all).
 - Splitting at pauses started from [thorstenMueller/Audio-to-Voice-Dataset](https://github.com/thorstenMueller/Audio-to-Voice-Dataset).
 - Alignment uses [MMS](https://github.com/facebookresearch/fairseq/tree/main/examples/mms) by Meta AI through [torchaudio](https://pytorch.org/audio), with [uroman](https://github.com/isi-nlp/uroman) by ISI.
-- The YouTube recipe labels clips with [ArissBandoss/whisper-small-mos](https://huggingface.co/ArissBandoss/whisper-small-mos) and downloads with [yt-dlp](https://github.com/yt-dlp/yt-dlp).
+- The YouTube recipe labels clips with a Mooré Whisper model from [GO AI Corp](https://huggingface.co/goaicorp) and downloads with [yt-dlp](https://github.com/yt-dlp/yt-dlp).
 - The denoised audio in MooreSpeechCorpora was made with [Resemble Enhance](https://github.com/resemble-ai/resemble-enhance); see [`tutorials/noise_reduce.ipynb`](tutorials/noise_reduce.ipynb).
 
 ## Citation
