@@ -18,6 +18,6 @@ pip install -e ".[dev]"
 pytest -m "not slow"
 ```
 
-Together, let’s build something that makes our languages shine in the AI world. 💛
-
 When you open a pull request, GitHub fills in the template: a title in the imperative under 60 characters, a one or two sentence summary, the changes, and how you tested them.
+
+Together, let’s build something that makes our languages shine in the AI world. 💛
