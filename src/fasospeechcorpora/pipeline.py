@@ -121,7 +121,7 @@ class Pipeline:
                 "text": text, "duration": round(end - start, 3), "start": round(start, 3), "end": round(end, 3),
                 "language": langs[k] if langs else self.lang.code, "source": rec.get("source"),
                 "source_id": rec["id"], **({"translation": rec["translation"]} if rec.get("translation") else {}),
-                **extra}
+                **rec.get("meta", {}), **extra}
 
     def _align_mms(self, rec: dict, aligner, cfg: dict) -> list[dict]:
         from .align import pad_spans
@@ -143,9 +143,9 @@ class Pipeline:
         wav = audio.load(self.root / rec["audio_filepath"], self.sr)
         rows = []
         for k, seg in enumerate(rec["segments"]):
-            row = self._clip_row(rec, k, seg["text"], seg["start"], seg["end"])
-            audio.save(self.root / row["audio_filepath"], wav[int(seg["start"] * self.sr):int(seg["end"] * self.sr)],
-                       self.sr)
+            end = min(seg["end"], len(wav) / self.sr)
+            row = self._clip_row(rec, k, seg["text"], seg["start"], end)
+            audio.save(self.root / row["audio_filepath"], wav[int(seg["start"] * self.sr):int(end * self.sr)], self.sr)
             rows.append(row)
         return rows
 
@@ -238,8 +238,14 @@ class Pipeline:
     def filter(self) -> None:
         cfg = {"min_duration": 0.5, "max_duration": 30.0, "min_score": 0.2, "max_foreign_ratio": None,
                "min_chars_per_second": 3.0, "max_chars_per_second": None,
-               "max_music_under_voice_db": None, "languages": [self.lang.code], **self.r.filter}
+               "max_music_under_voice_db": None, "clean_text": False, "no_digits": False,
+               "languages": [self.lang.code], **self.r.filter}
         rows = manifest.read(self.path("aligned.jsonl")) + manifest.read(self.path("segmented.jsonl"))
+        if cfg["clean_text"]:
+            from .text import clean_text
+            for r in rows:
+                if r.get("text"):
+                    r["raw_text"], r["text"] = r["text"], clean_text(r["text"])
         kept, dropped = [], Counter()
         for r in rows:
             reason = self._reject(r, cfg)
@@ -257,6 +263,8 @@ class Pipeline:
             return "no_text"
         if r.get("no_voice"):
             return "no_voice"
+        if cfg["no_digits"] and any(c.isdigit() for c in text):
+            return "digits"
         if cfg["max_music_under_voice_db"] is not None and r.get("music_under_voice_db", -99) > cfg["max_music_under_voice_db"]:
             return "music_under_voice"
         if cfg["languages"] and r.get("language") not in cfg["languages"]:
