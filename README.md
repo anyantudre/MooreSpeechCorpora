@@ -185,14 +185,14 @@ Published so far, all in Mooré:
 
 | Dataset | Content | Size |
 |---|---|---|
-| [moore-speech-bible](https://huggingface.co/datasets/anyantudre/moore-speech-bible) | Mooré Bible (bible.com and jw.org) | about 146 h |
 | [MooreSpeechCorpora](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora) | Tales, riddles and proverbs, denoised (`default` config) | 7.7 h |
 | [MooreSpeechCorpora: `contes`](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora/viewer/contes) | Tales, by volume | 4.8 h |
 | [MooreSpeechCorpora: `devinettes`](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora/viewer/devinettes) | Riddles | 2.1 h |
 | [MooreSpeechCorpora: `proverbes`](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora/viewer/proverbes) | Proverbs with French translations | 2.8 h Mooré |
-| [MooreSpeechCorporaV2](https://huggingface.co/datasets/anyantudre/MooreSpeechCorporaV2) | The same sources rebuilt: re-aligned, music cut at the edges, checked by two ASR models, 3 speakers | 4.9 h |
+| [MooreSpeechCorpora: `bible`](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora/viewer/bible) | Mooré Bible from bible.com | 74.3 h |
+| [MooreSpeechCorporaV2](https://huggingface.co/datasets/anyantudre/MooreSpeechCorporaV2) | Tales, riddles and proverbs rebuilt: re-aligned, music cut at the edges, checked by two ASR models, 3 speakers. Also `asr`, `asr_tagged`, `asr_negatives` and `fra` configs | 5.4 h |
 
-The datasets are gated and for non-commercial research use.
+The datasets are gated and for non-commercial research use. Their cards follow [`templates/dataset-card.md`](templates/dataset-card.md).
 
 Once the toolkit is mature, each language gets its own dataset on Hugging Face, named after the original one and published in gated mode: MooreSpeechCorpora, DioulaSpeechCorpora, GourmantchemaSpeechCorpora, FulfuldeSpeechCorpora, and so on.
 
