@@ -228,7 +228,8 @@ class Pipeline:
             raise ValueError("transcribe needs `transcribe.model` in the recipe or `asr_model` in the language file")
         rows = manifest.read(self.path("segmented.jsonl"))
         todo = [r for r in rows if not r.get("text")]
-        asr = ASR(model, cfg.get("target_lang"), cfg.get("device"), cfg.get("batch_size", 8))
+        asr = ASR(model, cfg.get("target_lang"), cfg.get("device"), cfg.get("batch_size", 8),
+                  cfg.get("max_batch_seconds", 60.0))
         step = 64
         for i in tqdm(range(0, len(todo), step), desc="transcribe"):
             batch = todo[i:i + step]
@@ -238,25 +239,40 @@ class Pipeline:
             manifest.write(self.path("segmented.jsonl"), rows)      # save progress
 
     def verify(self) -> None:
-        """CER of every clip with text, for each model in `verify.models`; `cer` is the best of them."""
+        """CER of every clip with text, for each model in `verify.models`; `cer` is the best of them.
+        Models run one at a time and are freed before the next loads; scores are saved after each model."""
+        import gc
+
         from .transcribe import ASR, cer
 
         models = self.r.verify.get("models") or [{"model": "facebook/mms-1b-all",
                                                     "target_lang": self.lang.mms_code or self.lang.code}]
-        for name in ("aligned.jsonl", "segmented.jsonl"):
-            rows = manifest.read(self.path(name))
-            for m in models:
-                key = "cer_" + m["model"].split("/")[-1]
+        names = ("aligned.jsonl", "segmented.jsonl")
+        for m in models:
+            key = "cer_" + m["model"].split("/")[-1]
+            asr = None
+            for name in names:
+                rows = manifest.read(self.path(name))
                 todo = [r for r in rows if r.get("text") and key not in r and not r.get("no_voice")]
                 if not todo:
                     continue
-                asr = ASR(m["model"], m.get("target_lang"), m.get("device"), m.get("batch_size", 8))
+                asr = asr or ASR(m["model"], m.get("target_lang"), m.get("device"), m.get("batch_size", 8),
+                                 m.get("max_batch_seconds", 60.0))
                 for i in tqdm(range(0, len(todo), 64), desc=f"verify {key}"):
                     batch = todo[i:i + 64]
                     hyps = asr([audio.load(self.root / r["audio_filepath"], self.sr) for r in batch], self.sr)
                     for r, h in zip(batch, hyps):
                         r[key] = round(cer(r["text"], h), 4)
-                del asr
+                    manifest.write(self.path(name), rows)          # save progress
+            del asr
+            gc.collect()
+            try:
+                import torch
+                torch.cuda.empty_cache()
+            except ImportError:
+                pass
+        for name in names:
+            rows = manifest.read(self.path(name))
             for r in rows:
                 scores = [v for k, v in r.items() if k.startswith("cer_")]
                 if scores:
@@ -291,15 +307,15 @@ class Pipeline:
             return "no_text"
         if r.get("no_voice"):
             return "no_voice"
+        if cfg["languages"] and r.get("language") not in cfg["languages"]:
+            return "other_language"           # before the CER check, so translation lines are counted here
         if cfg["no_digits"] and any(c.isdigit() for c in text):
             return "digits"
         if cfg["max_cer"] is not None and r.get("cer") is not None and r["cer"] > cfg["max_cer"]:
             return "high_cer"
         if cfg["max_music_under_voice_db"] is not None and r.get("music_under_voice_db", -99) > cfg["max_music_under_voice_db"]:
             return "music_under_voice"
-        if cfg["languages"] and r.get("language") not in cfg["languages"]:
-            return "other_language"
-        if d < cfg["min_duration"]:
+        if d <cfg["min_duration"]:
             return "too_short"
         if d > cfg["max_duration"]:
             return "too_long"
