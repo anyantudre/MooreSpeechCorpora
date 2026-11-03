@@ -1,16 +1,28 @@
 # MooreSpeechCorporaV2: the 18 tales by Jacques SIBALLO (one MP3 + full text per tale), the raw_data folder of
 # the archived data-alignment-moore repository.
 language: mos
+metadata: {category: conte}
 source:
   type: local
   path: path/to/data-alignment-moore/raw_data
-steps: [fetch, prepare, align, trim, verify, filter]
+steps: [fetch, prepare, align, trim, verify, detect_cs, filter]
 trim:
   margin: 0.2
 verify:
   models:
     - {model: facebook/mms-1b-all, target_lang: mos}
     - {model: anyantudre/moore-asr-eval-w2vbert}     # gated: request access, set HF_TOKEN
+    - {model: facebook/mms-1b-all, target_lang: fra, name: mms-1b-all-fra, languages: [fra], max_batch_seconds: 30}   # French lines only
+detect_cs:
+  embedded: [fra]
+  lexicon_from:              # one Mooré lexicon for all sources (paths from where you run fasospeech)
+    - data/proverbs-p/aligned.jsonl
+    - data/proverbs-sissao/aligned.jsonl
+    - data/tales-sibalo/aligned.jsonl
+    - data/tales-v1/aligned.jsonl
+    - data/tales-vol5/aligned.jsonl
+    - data/riddles-v1/aligned.jsonl
+  loans: null               # a versioned loan list, one word per line, to be built with native speakers
 filter:
   languages: [mos]
   min_score: null            # music lowers alignment scores; CER is the quality gate instead
@@ -21,3 +33,8 @@ filter:
   max_music_under_voice_db: -30
   clean_text: true
   no_digits: true
+  variants:
+    asr: {max_music_under_voice_db: null, min_chars_per_second: 3}    # keep the music bed and slow speech
+    fra: {languages: [fra]}                                           # the French readings, scored with mms-fra
+  negatives: {of: asr, max_share: 0.1, min_len: 1.0}                  # music-only clips, empty text
+  tagged: {of: asr, min_music: 0.5}                                   # untrimmed audio, <MUSIC> on music edges

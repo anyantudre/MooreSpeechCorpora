@@ -157,7 +157,7 @@ fasospeech combine data/proverbs-p data/tales-v1 data/riddles-v1 --output data/m
 fasospeech run recipes/moore-v2/combine.yaml --output data/moore-v2
 ```
 
-`recipes/moore-v2/` holds the recipes that build MooreSpeechCorporaV2, and `recipes/moore-v3/` those for MooreSpeechCorporaV3 (the same clips plus the ASR views, the French readings and code-switching labels).
+`recipes/moore-v2/` holds the recipes that build MooreSpeechCorporaV2: six sources, one per recipe, then `combine.yaml` for the speakers and the export (TTS clips, the ASR views and the French readings).
 
 ## Languages and sources
 
