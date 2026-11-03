@@ -1,7 +1,19 @@
 # MooreSpeechCorporaV2: proverbs p1 to p8 (ipsapps.org pages published by Urs Niggli, mooreburkina.com; one audio file per book, timestamps per page).
 # Pages read the proverb, its French translation, then the proverb again; V2 keeps the Mooré readings.
 language: mos
-metadata: {category: proverbe}
+metadata:
+  category: proverbe
+  book:
+    from: book
+    map:
+      p1: "Proverbes en mooré vol. 1"
+      p2: "Proverbes en mooré vol. 2"
+      p3: "Proverbes en mooré vol. 3"
+      p4: "Proverbes en mooré vol. 4"
+      p5: "Proverbes en mooré vol. 5"
+      p6: "Proverbes en mooré vol. 6"
+      p7: "Proverbes en mooré vol. 7"
+      p8: "Proverbes en mooré vol. 8"
 source:
   type: ipsapps
   mode: timestamps

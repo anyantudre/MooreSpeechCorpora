@@ -1,7 +1,9 @@
 # MooreSpeechCorporaV2: the 18 tales by Jacques SIBALLO (one MP3 + full text per tale), the raw_data folder of
 # the archived data-alignment-moore repository.
 language: mos
-metadata: {category: conte}
+metadata:
+  category: conte
+  book: "Contes mooré vol. 2 (Jacques Siballo)"
 source:
   type: local
   path: path/to/data-alignment-moore/raw_data

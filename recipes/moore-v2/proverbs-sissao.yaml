@@ -1,7 +1,14 @@
 # MooreSpeechCorporaV2: Sissao proverb volumes prv-v09, prv-v10, prv-v11 (ipsapps.org pages published by Urs Niggli, mooreburkina.com; one audio file
 # per page, each page reading several proverbs with their French translations).
 language: mos
-metadata: {category: proverbe}
+metadata:
+  category: proverbe
+  book:
+    from: book
+    map:
+      prv-v09: "Yel-bũna vol. 1"
+      prv-v10: "Yel-bũna vol. 2"
+      prv-v11: "Yel-bũna vol. 3"
 source:
   type: ipsapps
   mode: chapters

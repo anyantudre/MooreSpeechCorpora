@@ -135,5 +135,37 @@ def test_export_writes_one_config_per_view(tmp_path):
     tts, asr = load_from_disk(str(tmp_path / "hf" / "tts")), load_from_disk(str(tmp_path / "hf" / "asr"))
     assert "denoised_audio" in tts.column_names and "denoised_audio" not in asr.column_names
     meta = asr.select_columns(["nonspeech_spans", "segment_type"])[0]          # no audio decoding needed
-    assert asr.column_names[:3] == ["id", "audio", "text"] and meta["nonspeech_spans"][0]["label"] == "music"
+    assert asr.column_names[:3] == ["audio", "text", "duration"] and meta["nonspeech_spans"][0]["label"] == "music"
     assert meta["segment_type"] == "speech_with_edge_music"
+
+
+def test_metadata_fills_fields_and_looks_up_values(tmp_path):
+    recipe = tmp_path / "r.yaml"
+    recipe.write_text("""language: mos
+source: {type: local, path: .}
+metadata:
+  category: proverbe
+  book: {from: book, map: {p1: "Proverbes en mooré vol. 1"}}
+  note: "V1 contes {hf_split}"
+""", encoding="utf-8")
+    pipe = Pipeline(load_recipe(recipe, tmp_path))
+    r = {"book": "p1", "hf_split": "vol3"}
+    pipe._stamp(r)
+    assert r == {"book": "Proverbes en mooré vol. 1", "hf_split": "vol3", "category": "proverbe", "note": "V1 contes vol3"}
+    r = {"book": "p9"}
+    pipe._stamp(r)
+    assert r["book"] == "p9" and r["note"] == "V1 contes "
+
+
+def test_export_config_can_take_part_of_a_view(tmp_path):
+    pytest.importorskip("datasets")
+    from datasets import load_from_disk
+
+    from fasospeechcorpora.export import export
+    (tmp_path / "clips").mkdir()
+    sf.write(tmp_path / "clips" / "c0.wav", np.zeros(SR, dtype=np.float32), SR)
+    rows = [nonspeech.annotate(trimmed_row(id=f"c{i}", audio_filepath="clips/c0.wav", voice_filepath="clips/c0.wav",
+                                           category=cat)) for i, cat in enumerate(["conte", "proverbe", "conte"])]
+    export(rows, tmp_path, {"formats": ["hf"], "configs": [{"name": "contes", "view": "tts", "where": {"category": "conte"}}]}, "mos")
+    ds = load_from_disk(str(tmp_path / "hf" / "contes"))
+    assert ds.num_rows == 2 and ds.column_names[:6] == ["audio", "text", "duration", "voice", "speaker_id", "denoised_audio"]

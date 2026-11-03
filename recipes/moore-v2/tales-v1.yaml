@@ -1,7 +1,9 @@
 # MooreSpeechCorporaV2: tales vol3 to vol5 from MooreSpeechCorpora (contes). Their original books are not
 # known, so the published clips are re-processed (trimmed, cleaned, scored, filtered).
 language: mos
-metadata: {category: conte}
+metadata:
+  category: conte
+  book: "Tales, book not identified (V1 contes {hf_split})"
 source:
   type: hf_dataset
   repo: anyantudre/MooreSpeechCorpora

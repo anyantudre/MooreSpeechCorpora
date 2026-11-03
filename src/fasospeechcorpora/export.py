@@ -11,8 +11,9 @@ audio, text, duration, voice, speaker_id, denoised_audio (the voice-only copy fr
 source, chapter, alignment_score and cer. Run the `speakers` step first to fill voice and speaker_id.
 
 With `configs: [tts, asr, asr_negatives, asr_tagged, fra]` the hf export holds one config per view:
-`tts` is final.jsonl, every other name is the filter's final_<name>.jsonl. Each config has the columns
-in V3_COLUMNS (plus `denoised_audio` in `tts`), written to hf/<config>/ and pushed as that config.
+`tts` is final.jsonl, every other name is the filter's final_<name>.jsonl. A config can also take part
+of a view: `{name: contes, view: tts, where: {category: conte}}`. Each config has the columns in
+VIEW_COLUMNS (plus `denoised_audio` from `tts`), written to hf/<config>/ and pushed as that config.
 
 With `pairs: {translation: fra}` the hf export holds speech translation pairs instead of single
 clips: every clip in the recipe's language next to the translation spoken beside it (see make_pairs).
@@ -28,13 +29,14 @@ from pathlib import Path
 from . import manifest
 
 KEEP = ("id", "text", "duration", "language", "source", "source_id", "translation", "score")
-V3_COLUMNS = ["id", "audio", "text", "duration", "language", "voice", "speaker_id", "category", "source", "chapter",
-              "segment_type", "is_nonspeech", "nonspeech_spans", "cer", "alignment_score",
-              "text_tagged", "token_lang", "cmi", "n_switch_points", "cs_type", "matrix_lang"]
+# V2's columns first (in its order), then the non-speech and code-switching ones
+VIEW_COLUMNS = ["audio", "text", "duration", "voice", "speaker_id", "source", "chapter", "alignment_score", "cer",
+                "category", "book", "id", "language", "segment_type", "is_nonspeech", "nonspeech_spans",
+                "text_tagged", "token_lang", "cmi", "n_switch_points", "cs_type", "matrix_lang"]
 
 
-def v3_row(r: dict) -> dict:
-    return {**{k: r.get(k) for k in V3_COLUMNS}, "audio": r["audio_filepath"],
+def view_row(r: dict) -> dict:
+    return {**{k: r.get(k) for k in VIEW_COLUMNS}, "audio": r["audio_filepath"],
             "chapter": r.get("chapter", r.get("source_id")), "alignment_score": r.get("score"),
             "nonspeech_spans": r.get("nonspeech_spans") or [], "denoised_audio": r.get("voice_filepath")}
 
@@ -140,14 +142,18 @@ def export(rows: list[dict], root: Path, cfg: dict, language: str = "") -> None:
                   order=[k for k in pairs[0] if k != "id"] if pairs else None)
         rows = [r for r in rows if r.get("language") == language]      # ljspeech stays monolingual
     elif "hf" in formats and cfg.get("configs"):
-        for name in cfg["configs"]:
-            view = rows if name == "tts" else manifest.read(root / f"final_{name}.jsonl")
+        for c in cfg["configs"]:
+            c = {"name": c} if isinstance(c, str) else c
+            name, view_name = c["name"], c.get("view", c["name"])
+            view = rows if view_name == "tts" else manifest.read(root / f"final_{view_name}.jsonl")
+            view = [r for r in view if all(r.get(k) == v for k, v in (c.get("where") or {}).items())]
             if not view:
-                raise FileNotFoundError(f"config {name}: no clips in final_{name}.jsonl (set it up in the filter step)")
-            audio = {"audio": "audio", "denoised_audio": "denoised_audio"} if name == "tts" else {"audio": "audio"}
-            k = V3_COLUMNS.index("speaker_id") + 1
-            order = V3_COLUMNS[:k] + (["denoised_audio"] if name == "tts" else []) + V3_COLUMNS[k:]
-            to_hf([v3_row(r) for r in view], root, root / "hf" / name, **{**hub, "config_name": name},
+                raise FileNotFoundError(f"config {name}: no clips (view {view_name}, where {c.get('where')})")
+            tts = view_name == "tts"
+            audio = {"audio": "audio", "denoised_audio": "denoised_audio"} if tts else {"audio": "audio"}
+            k = VIEW_COLUMNS.index("speaker_id") + 1
+            order = VIEW_COLUMNS[:k] + (["denoised_audio"] if tts else []) + VIEW_COLUMNS[k:]
+            to_hf([view_row(r) for r in view], root, root / "hf" / name, **{**hub, "config_name": name},
                   audio_columns=audio, keep=tuple(k for k in order if k not in audio), order=order)
     elif "hf" in formats and cfg.get("layout") == "corpora_v1":
         v1 = [{"audio": r["audio_filepath"], "text": r["text"], "duration": r["duration"],

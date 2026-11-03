@@ -1,7 +1,9 @@
 # MooreSpeechCorporaV2: riddles from MooreSpeechCorpora (devinettes, train). Their original book is not
 # known, so the published clips are re-processed. Most of them start with 3 to 9 s of music.
 language: mos
-metadata: {category: devinette}
+metadata:
+  category: devinette
+  book: "Riddles, book not identified (V1 devinettes {hf_split})"
 source:
   type: hf_dataset
   repo: anyantudre/MooreSpeechCorpora

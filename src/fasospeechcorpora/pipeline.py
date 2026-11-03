@@ -407,7 +407,7 @@ class Pipeline:
                 if r.get("text"):
                     r["raw_text"], r["text"] = r["text"], clean_text(r["text"])
         for r in rows:
-            r.update(self.r.metadata)
+            self._stamp(r)
             if "segment_type" not in r:
                 nonspeech.annotate(r)
         views = {None: self._keep(rows, cfg, "final.jsonl")}
@@ -429,6 +429,17 @@ class Pipeline:
             manifest.write(self.path(f"final_{name}.jsonl"), out)
             log.info("%s: %d clips, %d with a <MUSIC> tag", name, len(out),
                      sum("<MUSIC>" in r["text"] for r in out))
+
+    def _stamp(self, r: dict) -> None:
+        """Recipe `metadata` on a clip. A value can name row fields ("V1 contes {hf_split}") or look one
+        up ({from: book, map: {p1: "Proverbes en mooré vol. 1"}}; unknown keys keep the current value)."""
+        for k, v in self.r.metadata.items():
+            if isinstance(v, dict):
+                r[k] = v.get("map", {}).get(str(r.get(v["from"])), r.get(k))
+            elif isinstance(v, str) and "{" in v:
+                r[k] = v.format_map(_Fields({f: ("" if x is None else x) for f, x in r.items()}))
+            else:
+                r[k] = v
 
     def _keep(self, rows: list[dict], cfg: dict, name: str) -> list[dict]:
         kept, dropped = [], Counter()
@@ -615,3 +626,10 @@ def _glotlid():
         p, lab = model.f.predict(text.replace("\n", " ") + "\n", 1, 0.0, "strict")[0]
         return lab.replace("__label__", ""), round(float(p), 3)
     return predict
+
+
+class _Fields(dict):
+    """Row fields for metadata templates: a missing field reads as empty."""
+
+    def __missing__(self, key: str) -> str:
+        return ""

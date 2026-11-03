@@ -2,7 +2,9 @@
 # but its text lists every paragraph and then the same paragraph in pieces, so the labels drift.
 # Each chapter is joined back into one recording, the repeated lines dropped, and the text aligned again.
 language: mos
-metadata: {category: conte}
+metadata:
+  category: conte
+  book: "Tales, book not identified (V1 contes {hf_split})"
 source:
   type: hf_dataset
   repo: anyantudre/MooreSpeechCorpora
