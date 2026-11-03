@@ -96,3 +96,34 @@ def test_hf_dataset_subset_limits_the_glob_to_one_config():
     pick = lambda pat: [f for f in files if fnmatch(f, pat)]          # noqa: E731
     assert pick(HFDataset.pattern("u/r", "train")) == files
     assert pick(HFDataset.pattern("u/r", "train", "devinettes")) == ["datasets/u/r/devinettes/train-0.parquet"]
+
+
+def test_drop_repeated_lines_keeps_each_passage_once():
+    from fasospeechcorpora.text import drop_repeated_lines
+
+    # moore-speech-contes vol5: paragraphs first, then the same paragraphs in pieces
+    lines = ["Daar a yembre, yõensã tigma.", "B sɩd yeele : « D sã n pa bao ».", "Daar a yembre,", "yõensã tigma.",
+             "B sɩd yeele :", "« D sã n pa bao ».", "D na n daa lombr.", "Rẽ, a sã n na.", "D na n daa lombr.",
+             "Rẽ,", "a sã n na."]
+    assert drop_repeated_lines(lines) == ["Daar a yembre,", "yõensã tigma.", "B sɩd yeele :", "« D sã n pa bao ».",
+                                          "D na n daa lombr.", "Rẽ,", "a sã n na."]
+    assert drop_repeated_lines(["Yaa sõma.", "Wẽnnaam yeelame."]) == ["Yaa sõma.", "Wẽnnaam yeelame."]
+
+
+def test_hf_dataset_rejoins_a_chapter(tmp_path):
+    import numpy as np
+    import soundfile as sf
+
+    from fasospeechcorpora.config import load_language
+    from fasospeechcorpora.sources.hf_dataset import HFDataset
+
+    recs = []
+    for i, text in enumerate(["Yaa sõma la.", "Yaa sõma", "la."]):
+        sf.write(tmp_path / f"c{i}.wav", np.full(16_000, i / 10, dtype=np.float32), 16_000)
+        recs.append({"id": f"c{i}", "audio_filepath": f"c{i}.wav", "source": "hf:u/r/vol5",
+                     "meta": {"hf_split": "vol5", "chapter": "01-B021"}, "segments": [{"start": 0, "end": 1, "text": text}]})
+    src = HFDataset(load_language("mos"), repo="u/r", rejoin="chapter", dedupe_lines=True)
+    [rec] = src._rejoin(recs, tmp_path)
+    assert rec["id"] == "vol5_01_B021" and rec["pieces"] == 3 and rec["lines"] == ["Yaa sõma", "la."]
+    wav, sr = sf.read(tmp_path / rec["audio_filepath"])
+    assert len(wav) == 3 * 16_000 and abs(wav[-1] - 0.2) < 1e-3

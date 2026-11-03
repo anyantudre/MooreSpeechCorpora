@@ -27,6 +27,7 @@ youtube = ["yt-dlp[default]", "imageio-ffmpeg"]
 hub = ["datasets[audio]>=3.0", "huggingface_hub"]
 enhance = ["demucs>=4.1"]
 speakers = ["torch", "speechbrain>=1.0", "scipy"]
+codeswitch = ["wordfreq", "fasttext-wheel", "huggingface_hub"]
 all = ["fasospeechcorpora[align,asr,youtube,hub]"]
 dev = ["pytest"]
 

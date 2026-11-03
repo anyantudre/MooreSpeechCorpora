@@ -64,3 +64,41 @@ def clean_text(text: str) -> str:
         if re.sub(r"\W", "", a) == re.sub(r"\W", "", b):
             return b                                              # the second copy has the cleaner spacing
     return t
+
+
+def drop_repeated_lines(lines: list[str], window: int = 40, max_parts: int = 8) -> list[str]:
+    """Keep each passage once when a text gives it twice, whole and then in pieces.
+
+    A line equal to a run of 2+ other lines nearby (a paragraph that also appears split) is dropped,
+    and of two equal lines the later copy is kept, as in texts listing paragraphs before their pieces.
+    Lines are compared lowercased, without punctuation.
+    """
+    def norm(t: str) -> str:
+        t = unicodedata.normalize("NFC", t.lower())
+        return " ".join("".join(c if unicodedata.category(c)[0] in "LM" else " " for c in t).split())
+
+    keys = [norm(t) for t in lines]
+    drop = {i for i, k in enumerate(keys) if not k}
+    for i, k in enumerate(keys):
+        if i in drop:
+            continue
+        for j in range(max(0, i - window), min(len(keys), i + window)):
+            acc = []
+            for m in range(j, min(len(keys), j + max_parts)):
+                if m == i:
+                    break
+                acc.append(keys[m])
+                joined = " ".join(acc)
+                if len(acc) >= 2 and joined == k:
+                    drop.add(i)
+                if len(joined) >= len(k):
+                    break
+            if i in drop:
+                break
+    last: dict[str, int] = {}
+    for i, k in enumerate(keys):
+        if i not in drop:
+            if k in last:
+                drop.add(last[k])
+            last[k] = i
+    return [t for i, t in enumerate(lines) if i not in drop]

@@ -82,14 +82,33 @@ flowchart LR
 | `enhance` | Optional: keeps only the voice, removing background music (Demucs; `pip install ".[enhance]"`). Meant for cleaner TTS audio: on the Mooré proverbs it did not change alignment or recognition accuracy |
 | `align` | Text known: finds where each sentence is spoken (MMS forced aligner) |
 | `segment` | No text: cuts at pauses into 2 to 15 s clips |
-| `trim` | Cuts each clip to its speech: no music or long silence before the first word or after the last (Demucs; `pip install ".[enhance]"`). Keeps a voice-only copy of each clip |
+| `trim` | Cuts each clip to its speech: no music or long silence before the first word or after the last (Demucs; `pip install ".[enhance]"`). Keeps a voice-only copy of each clip, and records what it cut at each edge (`nonspeech_spans`, `segment_type`) |
 | `transcribe` | No text: labels the clips with an ASR model |
-| `verify` | Scores every clip with one or more ASR models (CER); `filter.max_cer` then drops the worst |
-| `filter` | Drops clips that are too short, too long, badly aligned, in another language, or with too little text for their length. With `clean_text: true` it also tidies transcripts (item numbers, spaces before punctuation, apostrophes, doubled sentences); `no_digits: true` keeps numbers out of TTS data |
+| `verify` | Scores every clip with one or more ASR models (CER); `filter.max_cer` then drops the worst. A model can be limited to some languages, e.g. French translation lines scored with the MMS French adapter |
+| `detect_cs` | Optional: labels the language of every word (Mooré or French), tags French spans in `text_tagged` and computes code-switching measures (`pip install ".[codeswitch]"`). Code-switched clips are then scored on their Mooré words only |
+| `filter` | Drops clips that are too short, too long, badly aligned, in another language, or with too little text for their length. With `clean_text: true` it also tidies transcripts (item numbers, spaces before punctuation, apostrophes, doubled sentences); `no_digits: true` keeps numbers out of TTS data. It can also write extra views for ASR (see below) |
 | `speakers` | Groups clips by speaker, chapter by chapter (ECAPA embeddings; `pip install ".[speakers]"`), and suggests male/female voices from pitch; you confirm by ear and correct in `speakers/labels.yaml` |
-| `export` | Writes the Hugging Face dataset or LJSpeech folder, and can push to the Hub. `layout: corpora_v1` uses the MooreSpeechCorpora columns |
+| `export` | Writes the Hugging Face dataset or LJSpeech folder, and can push to the Hub. `layout: corpora_v1` uses the MooreSpeechCorpora columns; `configs:` writes one dataset config per view |
 
 Run only some steps with `--steps align,filter`.
+
+### TTS and ASR views
+
+TTS wants clean, trimmed clips. ASR does better with the music bed kept and with a few music-only clips that teach it to output nothing. The filter step can write both from one run:
+
+```yaml
+filter:
+  max_music_under_voice_db: -30          # final.jsonl: the TTS view
+  variants:
+    asr: {max_music_under_voice_db: null}   # final_asr.jsonl: same rules, music bed kept
+    fra: {languages: [fra]}                 # final_fra.jsonl: the French translation lines
+  negatives: {of: asr, max_share: 0.1}      # final_asr_negatives.jsonl: music-only clips, empty text
+  tagged: {of: asr}                         # final_asr_tagged.jsonl: untrimmed, <MUSIC> on music edges
+export:
+  configs: [tts, asr, asr_negatives, asr_tagged, fra]
+```
+
+Tags come from a closed set (`<MUSIC> <NOISE> <LAUGH> <OVERLAP> <INAUDIBLE>`) and mark only edges, never the music under speech. The CER scorer removes them, as it removes the `<fr>...</fr>` marks of `text_tagged`. When you evaluate a model, leave out rows with `is_nonspeech: true` and report how often the model writes something on them instead.
 
 ## Add your language
 
@@ -127,7 +146,7 @@ export:
 
 For bilingual sources such as the proverbs (Mooré read with its French translation), `export.pairs` writes speech translation pairs instead of single clips; see [`recipes/mos-proverbs.yaml`](recipes/mos-proverbs.yaml).
 
-To build from your own recordings, use `type: local` and put a `.txt` file next to each audio file. A plain transcript is split into sentences and aligned. An Audacity label file (`start`, `end`, `text` on each line) is cut as it is, so hand-labelled clips need no alignment. Files without a `.txt` are cut at pauses and transcribed. To re-process an existing Hugging Face dataset (trim, clean, filter its clips again), use `type: hf_dataset` with the `repo`, `splits` and `text_column`. New source types are a class with one `fetch` method; see [`sources/base.py`](src/fasospeechcorpora/sources/base.py).
+To build from your own recordings, use `type: local` and put a `.txt` file next to each audio file. A plain transcript is split into sentences and aligned. An Audacity label file (`start`, `end`, `text` on each line) is cut as it is, so hand-labelled clips need no alignment. Files without a `.txt` are cut at pauses and transcribed. To re-process an existing Hugging Face dataset (trim, clean, filter its clips again), use `type: hf_dataset` with the `repo`, `splits` and `text_column`. When its clips are cut in the wrong places, `rejoin: chapter` joins each chapter's clips back into one recording to align it again, and `dedupe_lines: true` drops lines that repeat a passage; that turned the misaligned V1 tales vol5 (median CER 0.73) into 1,743 usable clips (median CER 0.045). New source types are a class with one `fetch` method; see [`sources/base.py`](src/fasospeechcorpora/sources/base.py).
 
 ## Combine several sources
 
@@ -138,7 +157,7 @@ fasospeech combine data/proverbs-p data/tales-v1 data/riddles-v1 --output data/m
 fasospeech run recipes/moore-v2/combine.yaml --output data/moore-v2
 ```
 
-`recipes/moore-v2/` holds the recipes that build MooreSpeechCorporaV2.
+`recipes/moore-v2/` holds the recipes that build MooreSpeechCorporaV2: six sources, one per recipe, then `combine.yaml` for the speakers and the export (TTS clips, the ASR views and the French readings).
 
 ## Languages and sources
 

@@ -37,6 +37,8 @@ class Recipe:
     align: dict[str, Any] = field(default_factory=dict)
     segment: dict[str, Any] = field(default_factory=dict)
     transcribe: dict[str, Any] = field(default_factory=dict)
+    detect_cs: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)   # stamped on every clip by filter (see Pipeline._stamp)
     filter: dict[str, Any] = field(default_factory=dict)
     export: dict[str, Any] = field(default_factory=dict)
 
