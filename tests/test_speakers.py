@@ -106,6 +106,29 @@ def test_verify_scores_every_clip_and_filter_uses_it(tmp_path, monkeypatch):
     assert [r["text"] for r in manifest.read(tmp_path / "out" / "final.jsonl")] == ["Wẽnnaam yeelame."]
 
 
+def test_verify_model_limited_to_some_languages(tmp_path, monkeypatch):
+    import fasospeechcorpora.transcribe as transcribe
+
+    class FakeASR:
+        def __init__(self, *a, **k):
+            pass
+
+        def __call__(self, clips, sr):
+            return ["x" for _ in clips]
+
+    monkeypatch.setattr(transcribe, "ASR", FakeASR)
+    pipe = make_run(tmp_path, ["fetch", "prepare", "align"])
+    rows = manifest.read(pipe.path("aligned.jsonl"))
+    rows[0]["language"] = "fra"
+    manifest.write(pipe.path("aligned.jsonl"), rows)
+    pipe.r.verify = {"models": [{"model": "facebook/mms-1b-all", "target_lang": "fra", "name": "mms-fra",
+                                 "languages": ["fra"]}]}
+    pipe.verify()
+    got = manifest.read(pipe.path("aligned.jsonl"))
+    assert "cer_mms-fra" in got[0] and "hyp_mms-fra" in got[0]
+    assert all("cer_mms-fra" not in r for r in got[1:])
+
+
 def test_export_corpora_v1_layout(tmp_path):
     pytest.importorskip("datasets")
     from datasets import load_from_disk

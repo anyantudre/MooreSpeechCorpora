@@ -4,6 +4,11 @@ Reads the parquet files directly (no audio decoding library needed) and writes e
 bytes to `raw/`. Each clip becomes one record whose single segment is the whole clip, so `align`
 copies it as is and `trim` can then cut it to its speech. Needs `pip install "fasospeechcorpora[hub]"`
 and HF_TOKEN for gated or private datasets.
+
+With `rejoin: chapter` the clips of each chapter (a column listed in keep_columns) are joined back,
+in dataset order, into one recording whose text is the clips' texts, so `align` cuts it again. Use it
+when the published clips are cut in the wrong places. `dedupe_lines: true` also drops the lines that
+repeat a passage (see text.drop_repeated_lines), as in moore-speech-contes vol5.
 """
 from __future__ import annotations
 
@@ -12,7 +17,7 @@ from pathlib import Path
 
 import soundfile as sf
 
-from ..text import normalize
+from ..text import drop_repeated_lines, normalize, split_sentences
 from .base import Source, register
 
 
@@ -27,7 +32,8 @@ def _ext(data: bytes, path: str | None) -> str:
 class HFDataset(Source):
     """Params: repo ("user/name"), splits (list, default ["train"]), audio_column ("audio"),
     text_column ("text"), keep_columns (list of columns copied into each clip, e.g. [chapter]),
-    subset (the folder of one config, e.g. "contes", when several configs share split names)."""
+    subset (the folder of one config, e.g. "contes", when several configs share split names),
+    rejoin (a column: join each group's clips into one recording to align again), dedupe_lines."""
 
     @staticmethod
     def pattern(repo: str, split: str, subset: str | None = None) -> str:
@@ -69,4 +75,25 @@ class HFDataset(Source):
                                "meta": {"hf_split": split, **{k: row[k] for k in keep}}}
                         rec["segments"] = [{"start": 0.0, "end": duration if duration else 1e9, "text": text}]
                         records.append(rec)
-        return records
+        return self._rejoin(records, raw_dir) if p.get("rejoin") else records
+
+    def _rejoin(self, records: list[dict], raw_dir: Path) -> list[dict]:
+        import numpy as np
+
+        from .. import audio
+
+        key, out, groups = self.params["rejoin"], [], {}
+        for r in records:
+            groups.setdefault((r["meta"]["hf_split"], str(r["meta"][key])), []).append(r)
+        for (split, value), rs in groups.items():
+            rid = re.sub(r"\W", "_", f"{split}_{value}")
+            dest = raw_dir / "rejoined" / f"{rid}.wav"
+            if not dest.exists():
+                audio.save(dest, np.concatenate([audio.load(raw_dir / r["audio_filepath"], 16_000) for r in rs]), 16_000)
+            lines = [r["segments"][0]["text"] for r in rs]
+            if self.params.get("dedupe_lines"):
+                lines = drop_repeated_lines(lines)
+            out.append({"id": rid, "audio_filepath": f"rejoined/{rid}.wav", "source": rs[0]["source"],
+                        "meta": rs[0]["meta"], "pieces": len(rs),
+                        "lines": [s for x in lines for s in split_sentences(x, self.lang)]})
+        return out

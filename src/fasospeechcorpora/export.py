@@ -10,6 +10,10 @@ With `layout: corpora_v1` the hf export uses the MooreSpeechCorpora columns, in 
 audio, text, duration, voice, speaker_id, denoised_audio (the voice-only copy from `trim`), then
 source, chapter, alignment_score and cer. Run the `speakers` step first to fill voice and speaker_id.
 
+With `configs: [tts, asr, asr_negatives, asr_tagged, fra]` the hf export holds one config per view:
+`tts` is final.jsonl, every other name is the filter's final_<name>.jsonl. Each config has the columns
+in V3_COLUMNS (plus `denoised_audio` in `tts`), written to hf/<config>/ and pushed as that config.
+
 With `pairs: {translation: fra}` the hf export holds speech translation pairs instead of single
 clips: every clip in the recipe's language next to the translation spoken beside it (see make_pairs).
 The filter must keep both languages (`filter.languages: [mos, fra]`).
@@ -24,6 +28,15 @@ from pathlib import Path
 from . import manifest
 
 KEEP = ("id", "text", "duration", "language", "source", "source_id", "translation", "score")
+V3_COLUMNS = ["id", "audio", "text", "duration", "language", "voice", "speaker_id", "category", "source", "chapter",
+              "segment_type", "is_nonspeech", "nonspeech_spans", "cer", "alignment_score",
+              "text_tagged", "token_lang", "cmi", "n_switch_points", "cs_type", "matrix_lang"]
+
+
+def v3_row(r: dict) -> dict:
+    return {**{k: r.get(k) for k in V3_COLUMNS}, "audio": r["audio_filepath"],
+            "chapter": r.get("chapter", r.get("source_id")), "alignment_score": r.get("score"),
+            "nonspeech_spans": r.get("nonspeech_spans") or [], "denoised_audio": r.get("voice_filepath")}
 
 
 def hf_token() -> str | None:
@@ -126,6 +139,16 @@ def export(rows: list[dict], root: Path, cfg: dict, language: str = "") -> None:
                   audio_columns={f"{sp}_audio": f"{sp}_audio", f"{tp}_audio": f"{tp}_audio"},
                   order=[k for k in pairs[0] if k != "id"] if pairs else None)
         rows = [r for r in rows if r.get("language") == language]      # ljspeech stays monolingual
+    elif "hf" in formats and cfg.get("configs"):
+        for name in cfg["configs"]:
+            view = rows if name == "tts" else manifest.read(root / f"final_{name}.jsonl")
+            if not view:
+                raise FileNotFoundError(f"config {name}: no clips in final_{name}.jsonl (set it up in the filter step)")
+            audio = {"audio": "audio", "denoised_audio": "denoised_audio"} if name == "tts" else {"audio": "audio"}
+            k = V3_COLUMNS.index("speaker_id") + 1
+            order = V3_COLUMNS[:k] + (["denoised_audio"] if name == "tts" else []) + V3_COLUMNS[k:]
+            to_hf([v3_row(r) for r in view], root, root / "hf" / name, **{**hub, "config_name": name},
+                  audio_columns=audio, keep=tuple(k for k in order if k not in audio), order=order)
     elif "hf" in formats and cfg.get("layout") == "corpora_v1":
         v1 = [{"audio": r["audio_filepath"], "text": r["text"], "duration": r["duration"],
                "voice": r.get("voice"), "speaker_id": r.get("speaker_id"),
