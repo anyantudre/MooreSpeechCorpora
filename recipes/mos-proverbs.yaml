@@ -1,6 +1,6 @@
 # Mooré proverbs with French translations. Each page's audio reads proverb, translation, proverb.
 # The hf export pairs each Mooré reading with the French one, in the layout of the published
-# moore-speech-proverbes dataset (moore_audio, moore_text, french_text, french_audio, ...).
+# proverbes config of MooreSpeechCorpora (moore_audio, moore_text, french_text, french_audio, ...).
 language: mos
 source:
   type: ipsapps

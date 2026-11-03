@@ -1,4 +1,4 @@
-"""SIL "ipsapps" audio books (e.g. media.ipsapps.org/mos/ora/...): tales, proverbs, riddles.
+"""Audio books on ipsapps.org (apps built with SIL's app builder; e.g. media.ipsapps.org/mos/ora/...): tales, proverbs, riddles.
 
 Each `div.txs` on a page is one spoken line. Spans with class `bd` are in the book's language,
 spans with class `bdit` or `it` (italics) are the translation; a line belongs to whichever has more text.

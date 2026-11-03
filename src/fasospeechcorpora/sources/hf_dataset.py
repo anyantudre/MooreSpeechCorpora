@@ -26,7 +26,12 @@ def _ext(data: bytes, path: str | None) -> str:
 @register("hf_dataset")
 class HFDataset(Source):
     """Params: repo ("user/name"), splits (list, default ["train"]), audio_column ("audio"),
-    text_column ("text"), keep_columns (list of columns copied into each clip, e.g. [chapter])."""
+    text_column ("text"), keep_columns (list of columns copied into each clip, e.g. [chapter]),
+    subset (the folder of one config, e.g. "contes", when several configs share split names)."""
+
+    @staticmethod
+    def pattern(repo: str, split: str, subset: str | None = None) -> str:
+        return f"datasets/{repo}/{subset}/{split}-*.parquet" if subset else f"datasets/{repo}/**/{split}-*.parquet"
 
     def fetch(self, raw_dir: Path) -> list[dict]:
         import pyarrow.parquet as pq
@@ -41,9 +46,10 @@ class HFDataset(Source):
         raw_dir.mkdir(parents=True, exist_ok=True)
         records = []
         for split in p.get("splits", ["train"]):
-            files = sorted(fs.glob(f"datasets/{repo}/**/{split}-*.parquet"))
+            files = sorted(fs.glob(self.pattern(repo, split, p.get("subset"))))
+            where = f"{repo}/{p['subset']}" if p.get("subset") else repo
             if not files:
-                raise FileNotFoundError(f"No parquet files for split '{split}' in {repo}")
+                raise FileNotFoundError(f"No parquet files for split '{split}' in {where}")
             for f in files:
                 pf = pq.ParquetFile(fs.open(f, "rb"))
                 for g in range(pf.num_row_groups):
@@ -59,7 +65,7 @@ class HFDataset(Source):
                         if not dest.exists():
                             dest.write_bytes(audio["bytes"])
                         duration = sf.info(dest).duration if dest.suffix != ".mp3" else None
-                        rec = {"id": rid, "audio_filepath": dest.name, "source": f"hf:{repo}/{split}",
+                        rec = {"id": rid, "audio_filepath": dest.name, "source": f"hf:{where}/{split}",
                                "meta": {"hf_split": split, **{k: row[k] for k in keep}}}
                         rec["segments"] = [{"start": 0.0, "end": duration if duration else 1e9, "text": text}]
                         records.append(rec)

@@ -85,3 +85,14 @@ def test_local_audacity_labels_become_segments(tmp_path):
     assert read_text_file(f, load_language("mos")) == {"segments": [
         {"start": 0.0, "end": 5.35, "text": "Nin-kẽem a yembr kibare."},
         {"start": 5.36, "end": 10.15, "text": "La, a bi-bilf yikame."}]}
+
+
+def test_hf_dataset_subset_limits_the_glob_to_one_config():
+    from fnmatch import fnmatch
+
+    from fasospeechcorpora.sources.hf_dataset import HFDataset
+
+    files = ["datasets/u/r/data/train-0.parquet", "datasets/u/r/devinettes/train-0.parquet"]
+    pick = lambda pat: [f for f in files if fnmatch(f, pat)]          # noqa: E731
+    assert pick(HFDataset.pattern("u/r", "train")) == files
+    assert pick(HFDataset.pattern("u/r", "train", "devinettes")) == ["datasets/u/r/devinettes/train-0.parquet"]

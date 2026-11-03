@@ -43,7 +43,7 @@ def make_pairs(rows: list[dict], source_lang: str, translation: str,
                prefixes: tuple[str, str] | None = None) -> list[dict]:
     """Pair each clip in `source_lang` with the translation clip next to it in the same recording:
     the one right after it, or else the one right before it. A proverb read "Mooré, French, Mooré"
-    gives two pairs that share the French clip, like the published moore-speech-proverbes dataset."""
+    gives two pairs that share the French clip, like the proverbes config of MooreSpeechCorpora."""
     sp, tp = prefixes or (source_lang, translation)
     by_source = defaultdict(list)
     for r in rows:
