@@ -228,7 +228,8 @@ class Pipeline:
             raise ValueError("transcribe needs `transcribe.model` in the recipe or `asr_model` in the language file")
         rows = manifest.read(self.path("segmented.jsonl"))
         todo = [r for r in rows if not r.get("text")]
-        asr = ASR(model, cfg.get("target_lang"), cfg.get("device"), cfg.get("batch_size", 8))
+        asr = ASR(model, cfg.get("target_lang"), cfg.get("device"), cfg.get("batch_size", 8),
+                  cfg.get("max_batch_seconds", 60.0))
         step = 64
         for i in tqdm(range(0, len(todo), step), desc="transcribe"):
             batch = todo[i:i + step]
@@ -238,25 +239,41 @@ class Pipeline:
             manifest.write(self.path("segmented.jsonl"), rows)      # save progress
 
     def verify(self) -> None:
-        """CER of every clip with text, for each model in `verify.models`; `cer` is the best of them."""
+        """CER of every clip with text, for each model in `verify.models`; `cer` is the best of them.
+        Models run one at a time and are freed before the next loads; scores are saved after each model."""
+        import gc
+
         from .transcribe import ASR, cer
 
         models = self.r.verify.get("models") or [{"model": "facebook/mms-1b-all",
                                                     "target_lang": self.lang.mms_code or self.lang.code}]
-        for name in ("aligned.jsonl", "segmented.jsonl"):
-            rows = manifest.read(self.path(name))
-            for m in models:
-                key = "cer_" + m["model"].split("/")[-1]
+        names = ("aligned.jsonl", "segmented.jsonl")
+        for m in models:
+            key = "cer_" + m["model"].split("/")[-1]
+            asr = None
+            for name in names:
+                rows = manifest.read(self.path(name))
                 todo = [r for r in rows if r.get("text") and key not in r and not r.get("no_voice")]
                 if not todo:
                     continue
-                asr = ASR(m["model"], m.get("target_lang"), m.get("device"), m.get("batch_size", 8))
+                asr = asr or ASR(m["model"], m.get("target_lang"), m.get("device"), m.get("batch_size", 8),
+                                 m.get("max_batch_seconds", 60.0))
                 for i in tqdm(range(0, len(todo), 64), desc=f"verify {key}"):
                     batch = todo[i:i + 64]
                     hyps = asr([audio.load(self.root / r["audio_filepath"], self.sr) for r in batch], self.sr)
                     for r, h in zip(batch, hyps):
                         r[key] = round(cer(r["text"], h), 4)
-                del asr
+                        r["hyp_" + key[4:]] = h        # kept so scores can be recomputed without the model
+                    manifest.write(self.path(name), rows)          # save progress
+            del asr
+            gc.collect()
+            try:
+                import torch
+                torch.cuda.empty_cache()
+            except ImportError:
+                pass
+        for name in names:
+            rows = manifest.read(self.path(name))
             for r in rows:
                 scores = [v for k, v in r.items() if k.startswith("cer_")]
                 if scores:
@@ -291,15 +308,15 @@ class Pipeline:
             return "no_text"
         if r.get("no_voice"):
             return "no_voice"
+        if cfg["languages"] and r.get("language") not in cfg["languages"]:
+            return "other_language"           # before the CER check, so translation lines are counted here
         if cfg["no_digits"] and any(c.isdigit() for c in text):
             return "digits"
         if cfg["max_cer"] is not None and r.get("cer") is not None and r["cer"] > cfg["max_cer"]:
             return "high_cer"
         if cfg["max_music_under_voice_db"] is not None and r.get("music_under_voice_db", -99) > cfg["max_music_under_voice_db"]:
             return "music_under_voice"
-        if cfg["languages"] and r.get("language") not in cfg["languages"]:
-            return "other_language"
-        if d < cfg["min_duration"]:
+        if d <cfg["min_duration"]:
             return "too_short"
         if d > cfg["max_duration"]:
             return "too_long"
@@ -314,28 +331,44 @@ class Pipeline:
         return None
 
     def speakers(self) -> None:
-        """Label speakers in final.jsonl. Writes speakers/summary.json and a few example clips per group
-        to listen to. Put corrections in speakers/labels.yaml ({group: {speaker_id: 1, voice: male}})
-        and run the step again to apply them."""
+        """Label speakers in final.jsonl. Clips are grouped chapter by chapter (see speakers.py).
+        Writes speakers/summary.json and a few example clips per group to listen to. Put corrections
+        in speakers/labels.yaml ({group: {speaker_id: 1, voice: male}}) and run the step again to
+        apply them. The grouping is redone when the model, threshold or units change."""
+        import json
         import shutil
 
         import numpy as np
         import yaml
 
-        from .speakers import SpeakerEmbedder, cluster, median_f0
+        from . import speakers as sp
 
-        cfg = {"model": "microsoft/wavlm-base-plus-sv", "threshold": 0.75, "male_below_hz": 165, **self.r.speakers}
+        cfg = {"model": "ecapa", "threshold": 0.55, "by_chapter": True, "min_unit_clips": 3, "device": None,
+               "male_below_hz": 165, **self.r.speakers}
         rows = manifest.read(self.path("final.jsonl"))
         if not rows:
             return
         out = self.path("speakers")
         out.mkdir(exist_ok=True)
-        if not all("speaker_group" in r for r in rows):
+        method = {k: cfg[k] for k in ("model", "threshold", "by_chapter", "min_unit_clips")}
+        method_file = out / "method.json"
+        done = method_file.exists() and json.loads(method_file.read_text(encoding="utf-8")) == method
+        if not (done and all("speaker_group" in r for r in rows)):
             clips = [audio.load(self.root / r.get("voice_filepath", r["audio_filepath"]), self.sr) for r in rows]
-            emb = SpeakerEmbedder(cfg["model"])(clips, self.sr)
-            groups = cluster(emb, cfg["threshold"])
+            if cfg["model"] == "ecapa":
+                embedder = sp.EcapaEmbedder(device=cfg["device"], savedir=str(out / "model"))
+            else:
+                embedder = sp.SpeakerEmbedder(cfg["model"], cfg["device"])
+            emb = embedder(clips, self.sr)
+            units = sp.chapter_units(rows, cfg["min_unit_clips"]) if cfg["by_chapter"] else None
+            groups = sp.cluster(emb, units, cfg["threshold"])
             for r, g, c in zip(rows, groups, clips):
-                r["speaker_group"], r["f0"] = int(g), median_f0(c, self.sr)
+                r["speaker_group"] = int(g)
+                if r.get("f0") is None:
+                    r["f0"] = sp.median_f0(c, self.sr)
+            for old in out.glob("group*_example*.wav"):
+                old.unlink()
+            method_file.write_text(json.dumps(method), encoding="utf-8")
         summary = {}
         for g in sorted({r["speaker_group"] for r in rows}):
             members = [r for r in rows if r["speaker_group"] == g]
@@ -349,7 +382,7 @@ class Pipeline:
                           "suggested_voice": None if med is None else ("male" if med < cfg["male_below_hz"] else "female"),
                           "sources": sorted({str(r.get("source")) for r in members})[:5],
                           "examples": [f"group{g}_example{k + 1}.wav" for k in range(len(examples))]}
-        (out / "summary.json").write_text(__import__("json").dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
+        (out / "summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
         labels_file = out / "labels.yaml"
         labels = yaml.safe_load(labels_file.read_text(encoding="utf-8")) if labels_file.exists() else {}
         for r in rows:

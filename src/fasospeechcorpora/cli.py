@@ -1,4 +1,4 @@
-"""Command line: `fasospeech run recipe.yaml`, `fasospeech check recipe.yaml`, `fasospeech languages`."""
+"""Command line: `fasospeech run`, `fasospeech check`, `fasospeech combine`, `fasospeech languages`."""
 from __future__ import annotations
 
 import argparse
@@ -27,6 +27,10 @@ def main(argv: list[str] | None = None) -> None:
     check.add_argument("--model", help="ASR model (default: facebook/mms-1b-all)")
     check.add_argument("--target-lang", help="MMS adapter code (default: the language's mms_code)")
 
+    comb = sub.add_parser("combine", help="merge the final clips of several runs into one folder")
+    comb.add_argument("runs", nargs="+", help="run folders (each with a final.jsonl)")
+    comb.add_argument("--output", required=True)
+
     sub.add_parser("languages", help="list bundled languages")
 
     args = ap.parse_args(argv)
@@ -35,6 +39,13 @@ def main(argv: list[str] | None = None) -> None:
             stream.reconfigure(encoding="utf-8", errors="replace")
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
+    if args.command == "combine":
+        from . import manifest
+        from .combine import combine
+
+        rows = combine(args.runs, args.output)
+        logging.info("%d clips (%.2f h) from %d runs in %s", len(rows), manifest.total_hours(rows), len(args.runs), args.output)
+        return
     if args.command == "languages":
         for lang in available_languages():
             print(f"{lang.code}  {lang.name}")

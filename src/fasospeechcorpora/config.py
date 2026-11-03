@@ -26,8 +26,8 @@ class Language:
 class Recipe:
     name: str
     language: Language
-    source: dict[str, Any]
     output_dir: Path
+    source: dict[str, Any] = field(default_factory=dict)
     steps: list[str] = field(default_factory=lambda: ["fetch", "prepare", "align", "filter", "export"])
     sample_rate: int = 16_000
     enhance: dict[str, Any] = field(default_factory=dict)

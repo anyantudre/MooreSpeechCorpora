@@ -1,0 +1,26 @@
+# MooreSpeechCorporaV2: riddles from moore-speech-devinettes (train). Their original book is not
+# known, so the published clips are re-processed. Most of them start with 3 to 9 s of music.
+language: mos
+source:
+  type: hf_dataset
+  repo: anyantudre/moore-speech-devinettes
+  splits: [train]
+  text_column: transcription
+  keep_columns: [chapter]
+steps: [fetch, prepare, align, trim, verify, filter]
+trim:
+  margin: 0.2
+verify:
+  models:
+    - {model: facebook/mms-1b-all, target_lang: mos}
+    - {model: anyantudre/moore-asr-eval-w2vbert}     # gated: request access, set HF_TOKEN
+filter:
+  languages: [mos]
+  min_score: null            # music lowers alignment scores; CER is the quality gate instead
+  max_cer: 0.25
+  min_duration: 0.8
+  min_chars_per_second: 5        # about 4 letters per second: drops clips with long pauses inside
+  max_duration: 20
+  max_music_under_voice_db: -30
+  clean_text: true
+  no_digits: true

@@ -86,7 +86,7 @@ flowchart LR
 | `transcribe` | No text: labels the clips with an ASR model |
 | `verify` | Scores every clip with one or more ASR models (CER); `filter.max_cer` then drops the worst |
 | `filter` | Drops clips that are too short, too long, badly aligned, in another language, or with too little text for their length. With `clean_text: true` it also tidies transcripts (item numbers, spaces before punctuation, apostrophes, doubled sentences); `no_digits: true` keeps numbers out of TTS data |
-| `speakers` | Groups clips by speaker and suggests male/female voices; you confirm by ear and correct in `speakers/labels.yaml` |
+| `speakers` | Groups clips by speaker, chapter by chapter (ECAPA embeddings; `pip install ".[speakers]"`), and suggests male/female voices from pitch; you confirm by ear and correct in `speakers/labels.yaml` |
 | `export` | Writes the Hugging Face dataset or LJSpeech folder, and can push to the Hub. `layout: corpora_v1` uses the MooreSpeechCorpora columns |
 
 Run only some steps with `--steps align,filter`.
@@ -128,6 +128,17 @@ export:
 For bilingual sources such as the proverbs (Mooré read with its French translation), `export.pairs` writes speech translation pairs instead of single clips; see [`recipes/mos-proverbs.yaml`](recipes/mos-proverbs.yaml).
 
 To build from your own recordings, use `type: local` and put a `.txt` file next to each audio file. A plain transcript is split into sentences and aligned. An Audacity label file (`start`, `end`, `text` on each line) is cut as it is, so hand-labelled clips need no alignment. Files without a `.txt` are cut at pauses and transcribed. To re-process an existing Hugging Face dataset (trim, clean, filter its clips again), use `type: hf_dataset` with the `repo`, `splits` and `text_column`. New source types are a class with one `fetch` method; see [`sources/base.py`](src/fasospeechcorpora/sources/base.py).
+
+## Combine several sources
+
+A dataset often mixes sources, such as proverbs, tales and riddles. Run one recipe per source, merge the results, then label speakers and export once:
+
+```bash
+fasospeech combine data/proverbs-p data/tales-v1 data/riddles-v1 --output data/moore-v2
+fasospeech run recipes/moore-v2/combine.yaml --output data/moore-v2
+```
+
+`recipes/moore-v2/` holds the recipes that build MooreSpeechCorporaV2.
 
 ## Languages and sources
 
