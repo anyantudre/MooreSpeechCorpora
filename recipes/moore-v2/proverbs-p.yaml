@@ -1,4 +1,4 @@
-# MooreSpeechCorporaV2: proverbs p1 to p8 (SIL ipsapps; one audio file per book, timestamps per page).
+# MooreSpeechCorporaV2: proverbs p1 to p8 (ipsapps.org pages published by Urs Niggli, mooreburkina.com; one audio file per book, timestamps per page).
 # Pages read the proverb, its French translation, then the proverb again; V2 keeps the Mooré readings.
 language: mos
 source:

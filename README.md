@@ -16,7 +16,7 @@ FasoSpeechCorpora turns long recordings into short audio clips paired with their
 
 It extends MooreSpeechCorpora, the original work on Mooré that produced the [Mooré speech datasets](#datasets). The same pipeline now covers Dioula, Fulfuldé, Gourmantchéma and any other language: one config file is enough to add one.
 
-- It fetches audio, and the text when there is one, from audio Bibles on bible.com, SIL audio books, YouTube or your own folder.
+- It fetches audio, and the text when there is one, from audio Bibles on bible.com, audio books on ipsapps.org, YouTube or your own folder.
 - It cuts each recording into sentences. When the text is known, forced alignment finds where each sentence is spoken. When it isn't, FasoSpeechCorpora splits the audio at pauses and a speech model transcribes the clips.
 - It exports the clips as a Hugging Face dataset, an LJSpeech folder or a JSONL manifest.
 
@@ -60,7 +60,7 @@ A recipe lists the steps to run. Each step reads and writes a JSONL manifest, so
 
 ```mermaid
 flowchart LR
-    src[("Source<br/>bible.com · SIL ipsapps<br/>YouTube · local folder")] --> fetch
+    src[("Source<br/>bible.com · ipsapps<br/>YouTube · local folder")] --> fetch
     fetch["fetch<br/><code>raw.jsonl</code>"] --> prepare["prepare<br/><code>prepared.jsonl</code>"]
     prepare --> enhance(["enhance · optional<br/>voice only, no music"])
     enhance --> known{"Text<br/>known?"}
@@ -167,10 +167,11 @@ Published so far, all in Mooré:
 | Dataset | Content | Size |
 |---|---|---|
 | [moore-speech-bible](https://huggingface.co/datasets/anyantudre/moore-speech-bible) | Mooré Bible (bible.com and jw.org) | about 146 h |
-| [moore-speech-contes](https://huggingface.co/datasets/anyantudre/moore-speech-contes) | Tales | 4.8 h |
-| [moore-speech-proverbes](https://huggingface.co/datasets/anyantudre/moore-speech-proverbes) | Proverbs with French translations | 2.3 h Mooré |
-| [moore-speech-devinettes](https://huggingface.co/datasets/anyantudre/moore-speech-devinettes) | Riddles | 1.4 h |
-| [MooreSpeechCorpora](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora) | Tales, riddles and proverbs, denoised | 8.7 h |
+| [MooreSpeechCorpora](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora) | Tales, riddles and proverbs, denoised (`default` config) | 7.7 h |
+| [MooreSpeechCorpora: `contes`](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora/viewer/contes) | Tales, by volume | 4.8 h |
+| [MooreSpeechCorpora: `devinettes`](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora/viewer/devinettes) | Riddles | 2.1 h |
+| [MooreSpeechCorpora: `proverbes`](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora/viewer/proverbes) | Proverbs with French translations | 2.8 h Mooré |
+| [MooreSpeechCorporaV2](https://huggingface.co/datasets/anyantudre/MooreSpeechCorporaV2) | The same sources rebuilt: re-aligned, music cut at the edges, checked by two ASR models, 3 speakers | 4.9 h |
 
 The datasets are gated and for non-commercial research use.
 

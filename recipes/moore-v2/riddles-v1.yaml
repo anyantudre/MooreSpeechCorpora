@@ -1,9 +1,10 @@
-# MooreSpeechCorporaV2: riddles from moore-speech-devinettes (train). Their original book is not
+# MooreSpeechCorporaV2: riddles from MooreSpeechCorpora (devinettes, train). Their original book is not
 # known, so the published clips are re-processed. Most of them start with 3 to 9 s of music.
 language: mos
 source:
   type: hf_dataset
-  repo: anyantudre/moore-speech-devinettes
+  repo: anyantudre/MooreSpeechCorpora
+  subset: devinettes         # the devinettes config (formerly moore-speech-devinettes)
   splits: [train]
   text_column: transcription
   keep_columns: [chapter]

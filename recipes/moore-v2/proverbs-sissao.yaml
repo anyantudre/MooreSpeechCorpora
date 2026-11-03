@@ -1,4 +1,4 @@
-# MooreSpeechCorporaV2: Sissao proverb volumes prv-v09, prv-v10, prv-v11 (SIL ipsapps; one audio file
+# MooreSpeechCorporaV2: Sissao proverb volumes prv-v09, prv-v10, prv-v11 (ipsapps.org pages published by Urs Niggli, mooreburkina.com; one audio file
 # per page, each page reading several proverbs with their French translations).
 language: mos
 source:

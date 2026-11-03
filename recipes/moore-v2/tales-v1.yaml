@@ -1,9 +1,10 @@
-# MooreSpeechCorporaV2: tales vol3 to vol5 from moore-speech-contes. Their original books are not
+# MooreSpeechCorporaV2: tales vol3 to vol5 from MooreSpeechCorpora (contes). Their original books are not
 # known, so the published clips are re-processed (trimmed, cleaned, scored, filtered).
 language: mos
 source:
   type: hf_dataset
-  repo: anyantudre/moore-speech-contes
+  repo: anyantudre/MooreSpeechCorpora
+  subset: contes             # the contes config (formerly moore-speech-contes)
   splits: [vol3, vol4, vol5]
   text_column: transcription
   keep_columns: [chapter]
