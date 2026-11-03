@@ -330,28 +330,44 @@ class Pipeline:
         return None
 
     def speakers(self) -> None:
-        """Label speakers in final.jsonl. Writes speakers/summary.json and a few example clips per group
-        to listen to. Put corrections in speakers/labels.yaml ({group: {speaker_id: 1, voice: male}})
-        and run the step again to apply them."""
+        """Label speakers in final.jsonl. Clips are grouped chapter by chapter (see speakers.py).
+        Writes speakers/summary.json and a few example clips per group to listen to. Put corrections
+        in speakers/labels.yaml ({group: {speaker_id: 1, voice: male}}) and run the step again to
+        apply them. The grouping is redone when the model, threshold or units change."""
+        import json
         import shutil
 
         import numpy as np
         import yaml
 
-        from .speakers import SpeakerEmbedder, cluster, median_f0
+        from . import speakers as sp
 
-        cfg = {"model": "microsoft/wavlm-base-plus-sv", "threshold": 0.75, "male_below_hz": 165, **self.r.speakers}
+        cfg = {"model": "ecapa", "threshold": 0.55, "by_chapter": True, "min_unit_clips": 3, "device": None,
+               "male_below_hz": 165, **self.r.speakers}
         rows = manifest.read(self.path("final.jsonl"))
         if not rows:
             return
         out = self.path("speakers")
         out.mkdir(exist_ok=True)
-        if not all("speaker_group" in r for r in rows):
+        method = {k: cfg[k] for k in ("model", "threshold", "by_chapter", "min_unit_clips")}
+        method_file = out / "method.json"
+        done = method_file.exists() and json.loads(method_file.read_text(encoding="utf-8")) == method
+        if not (done and all("speaker_group" in r for r in rows)):
             clips = [audio.load(self.root / r.get("voice_filepath", r["audio_filepath"]), self.sr) for r in rows]
-            emb = SpeakerEmbedder(cfg["model"])(clips, self.sr)
-            groups = cluster(emb, cfg["threshold"])
+            if cfg["model"] == "ecapa":
+                embedder = sp.EcapaEmbedder(device=cfg["device"], savedir=str(out / "model"))
+            else:
+                embedder = sp.SpeakerEmbedder(cfg["model"], cfg["device"])
+            emb = embedder(clips, self.sr)
+            units = sp.chapter_units(rows, cfg["min_unit_clips"]) if cfg["by_chapter"] else None
+            groups = sp.cluster(emb, units, cfg["threshold"])
             for r, g, c in zip(rows, groups, clips):
-                r["speaker_group"], r["f0"] = int(g), median_f0(c, self.sr)
+                r["speaker_group"] = int(g)
+                if r.get("f0") is None:
+                    r["f0"] = sp.median_f0(c, self.sr)
+            for old in out.glob("group*_example*.wav"):
+                old.unlink()
+            method_file.write_text(json.dumps(method), encoding="utf-8")
         summary = {}
         for g in sorted({r["speaker_group"] for r in rows}):
             members = [r for r in rows if r["speaker_group"] == g]
@@ -365,7 +381,7 @@ class Pipeline:
                           "suggested_voice": None if med is None else ("male" if med < cfg["male_below_hz"] else "female"),
                           "sources": sorted({str(r.get("source")) for r in members})[:5],
                           "examples": [f"group{g}_example{k + 1}.wav" for k in range(len(examples))]}
-        (out / "summary.json").write_text(__import__("json").dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
+        (out / "summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
         labels_file = out / "labels.yaml"
         labels = yaml.safe_load(labels_file.read_text(encoding="utf-8")) if labels_file.exists() else {}
         for r in rows:

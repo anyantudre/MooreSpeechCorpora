@@ -86,7 +86,7 @@ flowchart LR
 | `transcribe` | No text: labels the clips with an ASR model |
 | `verify` | Scores every clip with one or more ASR models (CER); `filter.max_cer` then drops the worst |
 | `filter` | Drops clips that are too short, too long, badly aligned, in another language, or with too little text for their length. With `clean_text: true` it also tidies transcripts (item numbers, spaces before punctuation, apostrophes, doubled sentences); `no_digits: true` keeps numbers out of TTS data |
-| `speakers` | Groups clips by speaker and suggests male/female voices; you confirm by ear and correct in `speakers/labels.yaml` |
+| `speakers` | Groups clips by speaker, chapter by chapter (ECAPA embeddings; `pip install ".[speakers]"`), and suggests male/female voices from pitch; you confirm by ear and correct in `speakers/labels.yaml` |
 | `export` | Writes the Hugging Face dataset or LJSpeech folder, and can push to the Hub. `layout: corpora_v1` uses the MooreSpeechCorpora columns |
 
 Run only some steps with `--steps align,filter`.

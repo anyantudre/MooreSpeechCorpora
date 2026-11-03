@@ -5,7 +5,7 @@ import soundfile as sf
 from fasospeechcorpora import manifest
 from fasospeechcorpora.config import load_recipe
 from fasospeechcorpora.pipeline import Pipeline
-from fasospeechcorpora.speakers import cluster, median_f0
+from fasospeechcorpora.speakers import chapter_units, cluster, median_f0
 
 SR = 16_000
 
@@ -23,12 +23,31 @@ def test_median_f0_separates_low_and_high_voices():
 
 
 def test_cluster_groups_similar_embeddings_largest_first():
+    pytest.importorskip("scipy")
     rng = np.random.default_rng(0)
-    a, b = rng.standard_normal(512), rng.standard_normal(512)
-    emb = [a + 0.1 * rng.standard_normal(512) for _ in range(5)] + [b + 0.1 * rng.standard_normal(512) for _ in range(3)]
+    a, b = rng.standard_normal(192), rng.standard_normal(192)
+    emb = [a + 0.1 * rng.standard_normal(192) for _ in range(5)] + [b + 0.1 * rng.standard_normal(192) for _ in range(3)]
     emb = np.stack([e / np.linalg.norm(e) for e in emb])
-    labels = cluster(emb, 0.8)
-    assert list(labels) == [0, 0, 0, 0, 0, 1, 1, 1]
+    assert list(cluster(emb, threshold=0.8)) == [0, 0, 0, 0, 0, 1, 1, 1]
+
+
+def test_cluster_by_chapter_keeps_a_noisy_clip_with_its_chapter():
+    pytest.importorskip("scipy")
+    rng = np.random.default_rng(1)
+    a, b = rng.standard_normal(192), rng.standard_normal(192)
+    emb = [a + 0.1 * rng.standard_normal(192) for _ in range(4)] + [b] + [b + 0.1 * rng.standard_normal(192) for _ in range(3)]
+    emb = np.stack([e / np.linalg.norm(e) for e in emb])
+    # clip 4 sounds like speaker b but belongs to chapter A, read by speaker a
+    units = ["A"] * 5 + ["B"] * 3
+    assert list(cluster(emb, units, threshold=0.55)) == [0, 0, 0, 0, 0, 1, 1, 1]
+
+
+def test_chapter_units_fall_back_to_the_book_for_small_pages():
+    rows = [{"run": "p", "source": "s", "book": "p1", "chapter": f"c{i // 2}"} for i in range(4)]
+    rows += [{"run": "t", "source": "s", "chapter": "c0"} for _ in range(3)] + [{"run": "t", "source_id": "x"}]
+    units = chapter_units(rows, min_clips=3)
+    assert units[:4] == ["p|s|p1"] * 4
+    assert units[4:7] == ["t|s|None|c0"] * 3 and units[7] == "t|None|None|x"
 
 
 def make_run(tmp_path, steps, recipe_extra=""):
@@ -48,14 +67,16 @@ def make_run(tmp_path, steps, recipe_extra=""):
 def test_speakers_step_labels_and_reads_corrections(tmp_path, monkeypatch):
     import fasospeechcorpora.speakers as speakers
 
-    class FakeEmbedder:                      # one direction per pitch, standing in for WavLM
+    pytest.importorskip("scipy")
+
+    class FakeEmbedder:                      # one direction per pitch, standing in for ECAPA
         def __init__(self, *a, **k):
             pass
 
         def __call__(self, clips, sr):
-            return np.stack([np.eye(512)[0] if median_f0(c) < 165 else np.eye(512)[1] for c in clips])
+            return np.stack([np.eye(192)[0] if median_f0(c) < 165 else np.eye(192)[1] for c in clips])
 
-    monkeypatch.setattr(speakers, "SpeakerEmbedder", FakeEmbedder)
+    monkeypatch.setattr(speakers, "EcapaEmbedder", FakeEmbedder)
     pipe = make_run(tmp_path, ["fetch", "prepare", "align", "filter", "speakers"])
     rows = {r["text"]: r for r in manifest.read(tmp_path / "out" / "final.jsonl")}
     assert rows["Wẽnnaam yeelame."]["voice"] == "male" and rows["La a yɩɩ woto."]["voice"] == "female"
