@@ -263,6 +263,7 @@ class Pipeline:
                     hyps = asr([audio.load(self.root / r["audio_filepath"], self.sr) for r in batch], self.sr)
                     for r, h in zip(batch, hyps):
                         r[key] = round(cer(r["text"], h), 4)
+                        r["hyp_" + key[4:]] = h        # kept so scores can be recomputed without the model
                     manifest.write(self.path(name), rows)          # save progress
             del asr
             gc.collect()

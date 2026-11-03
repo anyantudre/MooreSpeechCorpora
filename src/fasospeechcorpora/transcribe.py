@@ -5,6 +5,7 @@ MMS adapters (facebook/mms-1b-all) cover mos, dyu, gux and ful: set `target_lang
 """
 from __future__ import annotations
 
+import re
 import unicodedata
 
 import numpy as np
@@ -47,14 +48,20 @@ class ASR:
         return texts
 
 
-def _chars(text: str) -> str:
+def score_text(text: str) -> str:
+    """Text as it is scored: NFC, lowercase, `<...>` tags removed, and everything that is not a letter or a
+    combining mark (punctuation, apostrophes, hyphens, digits) turned into a space. Tone marks and nasal
+    tildes are kept. Apostrophes and hyphens become spaces because the Mooré ASR models write `t'a` and
+    `yõk-a` as two words."""
     text = unicodedata.normalize("NFC", text.lower())
-    return " ".join("".join(c for c in text if c.isalpha() or c.isspace() or c == "'").split())
+    text = re.sub(r"<[^>]*>", " ", text)
+    text = "".join(c if unicodedata.category(c)[0] in "LM" else " " for c in text)
+    return " ".join(text.split())
 
 
 def cer(reference: str, hypothesis: str) -> float:
-    """Character error rate after lowercasing and removing punctuation."""
-    r, h = _chars(reference), _chars(hypothesis)
+    """Character error rate on `score_text` of both sides."""
+    r, h = score_text(reference), score_text(hypothesis)
     if not r:
         return 0.0 if not h else 1.0
     prev = list(range(len(h) + 1))

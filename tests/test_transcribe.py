@@ -1,6 +1,6 @@
 import numpy as np
 
-from fasospeechcorpora.transcribe import ASR, cer
+from fasospeechcorpora.transcribe import ASR, cer, score_text
 
 
 def fake_asr(batch_size=8, max_batch_seconds=60.0):
@@ -31,3 +31,9 @@ def test_asr_keeps_input_order():
 
 def test_cer_ignores_case_and_punctuation():
     assert cer("Wẽnnaam yeelame.", "wẽnnaam yeelame") == 0.0
+
+
+def test_score_text_splits_apostrophes_and_hyphens_and_keeps_marks():
+    assert score_text("T’a yõk-a <MUSIC> «Ad paoor»!") == "t a yõk a ad paoor"
+    assert score_text("ɛ̃ ka") == "ɛ̃ ka"           # a tilde with no precomposed form stays
+    assert cer("Pʋg rʋmd ka mi t'a sɩd", "pʋg rʋmd ka mi t a sɩd") == 0.0

@@ -21,6 +21,7 @@ filter:
   min_score: null            # music lowers alignment scores; CER is the quality gate instead
   max_cer: 0.25
   min_duration: 0.8
+  min_chars_per_second: 5        # about 4 letters per second: drops clips with long pauses inside
   max_duration: 20
   max_music_under_voice_db: -30
   clean_text: true
