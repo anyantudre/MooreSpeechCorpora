@@ -169,3 +169,20 @@ def test_export_config_can_take_part_of_a_view(tmp_path):
     export(rows, tmp_path, {"formats": ["hf"], "configs": [{"name": "contes", "view": "tts", "where": {"category": "conte"}}]}, "mos")
     ds = load_from_disk(str(tmp_path / "hf" / "contes"))
     assert ds.num_rows == 2 and ds.column_names[:6] == ["audio", "text", "duration", "voice", "speaker_id", "denoised_audio"]
+
+
+def test_export_configs_share_one_schema_even_with_empty_columns(tmp_path):
+    pytest.importorskip("datasets")
+    from datasets import load_from_disk
+
+    from fasospeechcorpora.export import export
+    (tmp_path / "clips").mkdir()
+    sf.write(tmp_path / "clips" / "c0.wav", np.zeros(SR, dtype=np.float32), SR)
+    base = dict(audio_filepath="clips/c0.wav", voice_filepath="clips/c0.wav", speaker_id=1, voice="female")
+    rows = [nonspeech.annotate(trimmed_row(id="a", category="conte", score=0.9, **base)),
+            nonspeech.annotate(trimmed_row(id="b", category="devinette", nonspeech_spans=[], **base))]   # no score
+    export(rows, tmp_path, {"formats": ["hf"], "configs": [
+        {"name": "contes", "view": "tts", "where": {"category": "conte"}},
+        {"name": "devinettes", "view": "tts", "where": {"category": "devinette"}}]}, "mos")
+    a, b = (load_from_disk(str(tmp_path / "hf" / n)).features for n in ("contes", "devinettes"))
+    assert a == b and str(b["alignment_score"]) == "Value('float64')"

@@ -35,6 +35,18 @@ VIEW_COLUMNS = ["audio", "text", "duration", "voice", "speaker_id", "source", "c
                 "text_tagged", "token_lang", "cmi", "n_switch_points", "cs_type", "matrix_lang"]
 
 
+def view_types() -> dict:
+    """Fixed column types, so every config and subset has the same schema even when a column is empty
+    in it (e.g. no alignment score for re-processed clips): the Hub's default config joins subsets."""
+    from datasets import List, Value
+
+    f, s, i = Value("float64"), Value("string"), Value("int64")
+    return {"text": s, "duration": f, "voice": s, "speaker_id": i, "source": s, "chapter": s, "alignment_score": f,
+            "cer": f, "category": s, "book": s, "id": s, "language": s, "segment_type": s, "is_nonspeech": Value("bool"),
+            "nonspeech_spans": List({"start": f, "end": f, "label": s}), "text_tagged": s, "token_lang": List(s),
+            "cmi": f, "n_switch_points": i, "cs_type": s, "matrix_lang": s}
+
+
 def view_row(r: dict) -> dict:
     return {**{k: r.get(k) for k in VIEW_COLUMNS}, "audio": r["audio_filepath"],
             "chapter": r.get("chapter", r.get("source_id")), "alignment_score": r.get("score"),
@@ -98,8 +110,9 @@ def to_ljspeech(rows: list[dict], root: Path, out: Path) -> Path:
 def to_hf(rows: list[dict], root: Path, out: Path, repo_id: str | None = None, private: bool = True,
           test_size: float | None = None, seed: int = 42, config_name: str = "default", gated: str | None = None,
           audio_columns: dict[str, str] | None = None, keep: tuple[str, ...] | None = None,
-          order: list[str] | None = None):
-    """`audio_columns` maps dataset column -> row key holding a path (default: audio <- audio_filepath)."""
+          order: list[str] | None = None, types: dict | None = None):
+    """`audio_columns` maps dataset column -> row key holding a path (default: audio <- audio_filepath).
+    `types` fixes the type of some columns (see view_types)."""
     from datasets import Audio, Dataset
 
     audio_columns = audio_columns or {"audio": "audio_filepath"}
@@ -112,6 +125,9 @@ def to_hf(rows: list[dict], root: Path, out: Path, repo_id: str | None = None, p
     ds = Dataset.from_dict(columns)
     for col in audio_columns:
         ds = ds.cast_column(col, Audio(sampling_rate=16_000))
+    for col, t in (types or {}).items():
+        if col in ds.column_names and ds.features[col] != t:
+            ds = ds.cast_column(col, t)
     ds = ds.train_test_split(test_size=test_size, seed=seed) if test_size else ds
     ds.save_to_disk(str(out))
     if repo_id:
@@ -154,7 +170,8 @@ def export(rows: list[dict], root: Path, cfg: dict, language: str = "") -> None:
             k = VIEW_COLUMNS.index("speaker_id") + 1
             order = VIEW_COLUMNS[:k] + (["denoised_audio"] if tts else []) + VIEW_COLUMNS[k:]
             to_hf([view_row(r) for r in view], root, root / "hf" / name, **{**hub, "config_name": name},
-                  audio_columns=audio, keep=tuple(k for k in order if k not in audio), order=order)
+                  audio_columns=audio, keep=tuple(k for k in order if k not in audio), order=order,
+                  types=view_types())
     elif "hf" in formats and cfg.get("layout") == "corpora_v1":
         v1 = [{"audio": r["audio_filepath"], "text": r["text"], "duration": r["duration"],
                "voice": r.get("voice"), "speaker_id": r.get("speaker_id"),
