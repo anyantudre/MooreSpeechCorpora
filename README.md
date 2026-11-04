@@ -12,13 +12,9 @@
   <a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-B0723A"></a>
 </p>
 
-FasoSpeechCorpora turns long recordings into short audio clips paired with their text, ready to train speech recognition (ASR) or text-to-speech (TTS) models.
+FasoSpeechCorpora turns long recordings into short audio clips paired with their text, for training speech recognition (ASR) and text-to-speech (TTS) models. It grew out of MooreSpeechCorpora, the original Mooré work behind the [Mooré speech datasets](#datasets), and now covers Dioula, Fulfuldé, Gourmantchéma and any language with a config file.
 
-It extends MooreSpeechCorpora, the original work on Mooré that produced the [Mooré speech datasets](#datasets). The same pipeline now covers Dioula, Fulfuldé, Gourmantchéma and any other language: one config file is enough to add one.
-
-- It fetches audio, and the text when there is one, from audio Bibles on bible.com, audio books on ipsapps.org, YouTube or your own folder.
-- It cuts each recording into sentences. When the text is known, forced alignment finds where each sentence is spoken. When it isn't, FasoSpeechCorpora splits the audio at pauses and a speech model transcribes the clips.
-- It exports the clips as a Hugging Face dataset, an LJSpeech folder or a JSONL manifest.
+It reads audio Bibles on bible.com, audio books on ipsapps.org, YouTube, Hugging Face datasets or your own folder. When the text is known, forced alignment cuts each sentence; when it isn't, the audio is cut at pauses and an ASR model writes the text. Clips are exported as a Hugging Face dataset, an LJSpeech folder or a JSONL manifest.
 
 It runs on Linux, macOS, Windows and Colab, on CPU or GPU.
 
@@ -31,14 +27,14 @@ pip install -e ".[align,hub]"
 fasospeech run recipes/mos-bible.yaml --limit 2
 ```
 
-For a GPU, install the PyTorch build for your CUDA version first (see [pytorch.org](https://pytorch.org/get-started/locally/)).
+For a GPU, install the PyTorch build for your CUDA version first ([pytorch.org](https://pytorch.org/get-started/locally/)).
 
-This downloads the first two chapters of Genesis in Mooré, aligns each sentence with the audio and writes the clips to `data/mos-bible/`:
+This aligns the first two chapters of Genesis in Mooré and writes one clip per sentence to `data/mos-bible/`:
 
 ```text
 data/mos-bible/
 ├── raw/             downloaded audio
-├── wav/             the same audio, mono 16 kHz
+├── wav/             mono 16 kHz
 ├── clips/GEN_1/     one wav per sentence
 └── final.jsonl      one line per clip
 ```
@@ -47,7 +43,7 @@ data/mos-bible/
 {"id": "GEN_1_0002", "audio_filepath": "clips/GEN_1/GEN_1_0002.wav", "text": "Sɩngr wẽndẽ, Wẽnnaam naana yĩngr la tẽnga.", "duration": 3.923, "start": 9.626, "end": 13.549, "language": "mos", "source": "bible.com/3058", "source_id": "GEN_1", "score": 0.4788}
 ```
 
-Check the result against a speech recognition model (character error rate on a sample of clips):
+To check a sample of clips against an ASR model:
 
 ```bash
 pip install "fasospeechcorpora[asr]"
@@ -56,7 +52,7 @@ fasospeech check recipes/mos-bible.yaml --sample 50
 
 ## How it works
 
-A recipe lists the steps to run. Each step reads and writes a JSONL manifest, so you can rerun any step on its own, and FasoSpeechCorpora skips work that is already done.
+A recipe lists the steps to run. Each step reads and writes a JSONL manifest, so any step can be rerun alone, and finished work is skipped.
 
 ```mermaid
 flowchart LR
@@ -75,54 +71,54 @@ flowchart LR
     export --> out[("JSONL manifest<br/>LJSpeech folder<br/>Hugging Face dataset")]
 ```
 
-| Step | What it does |
-|---|---|
-| `fetch` | Downloads audio (and text) from the source |
-| `prepare` | Decodes to mono 16 kHz wav |
-| `enhance` | Optional: keeps only the voice, removing background music (Demucs; `pip install ".[enhance]"`). Meant for cleaner TTS audio: on the Mooré proverbs it did not change alignment or recognition accuracy |
-| `align` | Text known: finds where each sentence is spoken (MMS forced aligner) |
-| `segment` | No text: cuts at pauses into 2 to 15 s clips |
-| `trim` | Cuts each clip to its speech: no music or long silence before the first word or after the last (Demucs; `pip install ".[enhance]"`). Keeps a voice-only copy of each clip, and records what it cut at each edge (`nonspeech_spans`, `segment_type`) |
-| `transcribe` | No text: labels the clips with an ASR model |
-| `verify` | Scores every clip with one or more ASR models (CER); `filter.max_cer` then drops the worst. A model can be limited to some languages, e.g. French translation lines scored with the MMS French adapter |
-| `detect_cs` | Optional: labels the language of every word (Mooré or French), tags French spans in `text_tagged` and computes code-switching measures (`pip install ".[codeswitch]"`). Code-switched clips are then scored on their Mooré words only |
-| `filter` | Drops clips that are too short, too long, badly aligned, in another language, or with too little text for their length. With `clean_text: true` it also tidies transcripts (item numbers, spaces before punctuation, apostrophes, doubled sentences); `no_digits: true` keeps numbers out of TTS data. It can also write extra views for ASR (see below) |
-| `speakers` | Groups clips by speaker, chapter by chapter (ECAPA embeddings; `pip install ".[speakers]"`), and suggests male/female voices from pitch; you confirm by ear and correct in `speakers/labels.yaml` |
-| `export` | Writes the Hugging Face dataset or LJSpeech folder, and can push to the Hub. `layout: corpora_v1` uses the MooreSpeechCorpora columns; `configs:` writes one dataset config per view |
+| Step | What it does | Extra |
+|---|---|---|
+| `fetch` | Downloads audio and text | `youtube` for YouTube |
+| `prepare` | Converts to mono 16 kHz wav | |
+| `enhance` | Removes background music from the recordings (optional) | `enhance` |
+| `align` | Finds where each sentence is spoken (MMS) | `align` |
+| `segment` | Cuts at pauses into 2 to 15 s clips | |
+| `trim` | Cuts music and silence at clip edges; keeps a voice-only copy | `enhance` |
+| `transcribe` | Labels clips that have no text | `asr` |
+| `verify` | Scores each clip's text with one or more ASR models (CER) | `asr` |
+| `detect_cs` | Tags French words in Mooré text (optional) | `codeswitch` |
+| `filter` | Drops bad clips (length, CER, language, music); cleans text | |
+| `speakers` | Groups clips by voice and guesses male or female | `speakers` |
+| `export` | Writes the dataset and can push it to the Hub | `hub` |
 
-Run only some steps with `--steps align,filter`.
+Install an extra with `pip install ".[name]"`. Run only some steps with `--steps align,filter`. The recipes in [`recipes/`](recipes) show each step's options.
 
 ### TTS and ASR views
 
-TTS wants clean, trimmed clips. ASR does better with the music bed kept and with a few music-only clips that teach it to output nothing. The filter step can write both from one run:
+One run can write a clean view for TTS and a noisier one for ASR:
 
 ```yaml
 filter:
-  max_music_under_voice_db: -30          # final.jsonl: the TTS view
+  max_music_under_voice_db: -30          # final.jsonl: TTS, no music under the voice
   variants:
-    asr: {max_music_under_voice_db: null}   # final_asr.jsonl: same rules, music bed kept
-    fra: {languages: [fra]}                 # final_fra.jsonl: the French translation lines
-  negatives: {of: asr, max_share: 0.1}      # final_asr_negatives.jsonl: music-only clips, empty text
-  tagged: {of: asr}                         # final_asr_tagged.jsonl: untrimmed, <MUSIC> on music edges
+    asr: {max_music_under_voice_db: null}   # final_asr.jsonl: music bed kept
+    fra: {languages: [fra]}                 # final_fra.jsonl: French lines
+  negatives: {of: asr, max_share: 0.1}      # music-only clips with empty text
+  tagged: {of: asr}                         # untrimmed, <MUSIC> on music edges
 export:
   configs: [tts, asr, asr_negatives, asr_tagged, fra]
 ```
 
-Tags come from a closed set (`<MUSIC> <NOISE> <LAUGH> <OVERLAP> <INAUDIBLE>`) and mark only edges, never the music under speech. The CER scorer removes them, as it removes the `<fr>...</fr>` marks of `text_tagged`. When you evaluate a model, leave out rows with `is_nonspeech: true` and report how often the model writes something on them instead.
+Tags (`<MUSIC> <NOISE> <LAUGH> <OVERLAP> <INAUDIBLE>`) mark clip edges only. The CER scorer ignores them. When evaluating a model, leave out rows with `is_nonspeech: true`.
 
 ## Add your language
 
-A language is a small YAML file. Copy one from [`src/fasospeechcorpora/languages/`](src/fasospeechcorpora/languages) and change it:
+A language is a small YAML file. Copy one from [`src/fasospeechcorpora/languages/`](src/fasospeechcorpora/languages):
 
 ```yaml
 code: dyu                 # ISO 639-3
 name: Dioula
-letters: "abcdeɛfghijklmnɲŋoɔprstuwyz"   # used to drop text in other languages
+letters: "abcdeɛfghijklmnɲŋoɔprstuwyz"   # text with other letters is dropped
 sentence_end: ".!?"
-mms_code: dyu             # MMS speech model adapter, used by `fasospeech check`
+mms_code: dyu             # MMS adapter used by `fasospeech check`
 ```
 
-Then point a recipe at it with `language: dyu`, or at your own file with `language: {file: my-language.yaml}`.
+Then set `language: dyu` in a recipe, or `language: {file: my-language.yaml}`.
 
 ## Add your source
 
@@ -131,7 +127,7 @@ A recipe says where the audio comes from and how to process it:
 ```yaml
 language: gux
 source:
-  type: bible_com         # bible_com, ipsapps, youtube or local
+  type: bible_com         # bible_com, ipsapps, youtube, local or hf_dataset
   version: 3056           # the number in the bible.com URL
   abbreviation: BGP
   start: GEN.1
@@ -141,80 +137,74 @@ export:
   formats: [manifest, hf]
   repo_id: your-name/GourmantchemaSpeechCorpora   # omit to keep the dataset local
   private: true
-  gated: manual           # people must request access before downloading
+  gated: manual           # people request access before downloading
 ```
 
-For bilingual sources such as the proverbs (Mooré read with its French translation), `export.pairs` writes speech translation pairs instead of single clips; see [`recipes/mos-proverbs.yaml`](recipes/mos-proverbs.yaml).
+| Source | Use |
+|---|---|
+| `local` | Your recordings, with a `.txt` next to each file: a transcript to align, or an Audacity label file to cut as is. Files without one are cut at pauses and transcribed |
+| `hf_dataset` | Re-process a Hub dataset. `rejoin: chapter` joins badly cut clips back into one recording to align again |
+| `ipsapps` | Audio books. For bilingual ones, `export.pairs` writes speech translation pairs (see [`mos-proverbs.yaml`](recipes/mos-proverbs.yaml)) |
 
-To build from your own recordings, use `type: local` and put a `.txt` file next to each audio file. A plain transcript is split into sentences and aligned. An Audacity label file (`start`, `end`, `text` on each line) is cut as it is, so hand-labelled clips need no alignment. Files without a `.txt` are cut at pauses and transcribed. To re-process an existing Hugging Face dataset (trim, clean, filter its clips again), use `type: hf_dataset` with the `repo`, `splits` and `text_column`. When its clips are cut in the wrong places, `rejoin: chapter` joins each chapter's clips back into one recording to align it again, and `dedupe_lines: true` drops lines that repeat a passage; that turned the misaligned V1 tales vol5 (median CER 0.73) into 1,743 usable clips (median CER 0.045). New source types are a class with one `fetch` method; see [`sources/base.py`](src/fasospeechcorpora/sources/base.py).
+A new source type is a class with one `fetch` method ([`sources/base.py`](src/fasospeechcorpora/sources/base.py)).
 
 ## Combine several sources
 
-A dataset often mixes sources, such as proverbs, tales and riddles. Run one recipe per source, merge the results, then label speakers and export once:
+Run one recipe per source, merge the results, then label speakers and export once:
 
 ```bash
 fasospeech combine data/proverbs-p data/tales-v1 data/riddles-v1 --output data/moore-v2
 fasospeech run recipes/moore-v2/combine.yaml --output data/moore-v2
 ```
 
-`recipes/moore-v2/` holds the recipes that build MooreSpeechCorporaV2: seven sources, one per recipe (`bible.yaml` is the Mooré Old Testament), then `combine.yaml` for the speakers and the export (TTS clips, the ASR views and the French readings).
+[`recipes/moore-v2/`](recipes/moore-v2) builds MooreSpeechCorporaV2 this way from seven sources.
 
-## Languages and sources
+## Languages
 
 | Language | Code | Recipe | Status |
 |---|---|---|---|
 | Mooré | mos | `mos-bible`, `mos-tales`, `mos-proverbs`, `mos-proverbs-v10`, `mos-youtube` | Datasets published |
-| Dioula | dyu | `dyu-bible` | Tested on 2 chapters: CER 5.8% |
-| Gourmantchéma | gux | `gux-bible` | Tested on 2 chapters: CER 3.6% |
-| Fulfuldé (Maasina) | ffm | `ffm-bible` (New Testament) | Tested on 2 chapters: CER 6.4% |
-| Fulfuldé (Western Niger) | fuh | `fuh-bible` (New Testament) | Tested on 2 chapters: CER 9.3% |
+| Dioula | dyu | `dyu-bible` | Tested: CER 5.8% |
+| Gourmantchéma | gux | `gux-bible` | Tested: CER 3.6% |
+| Fulfuldé (Maasina) | ffm | `ffm-bible` (New Testament) | Tested: CER 6.4% |
+| Fulfuldé (Western Niger) | fuh | `fuh-bible` (New Testament) | Tested: CER 9.3% |
 
-CER is the character error rate of the MMS speech recognizer (`facebook/mms-1b-all`) on 60 clips, against each clip's text, as reported by `fasospeech check`. It mixes recognizer errors with alignment errors, so treat it as an upper bound on alignment problems. Both Fulfuldé varieties use the MMS `ful` model, which fits Maasina better.
+CER of `facebook/mms-1b-all` on 60 clips from 2 chapters (`fasospeech check`). It includes recognizer errors, so it overstates alignment errors. Both Fulfuldé varieties use the MMS `ful` model.
 
 ## Alignment backends
 
-The default aligner is Meta's MMS model through torchaudio, with the Python `uroman` romanizer. It needs no Perl or fairseq and runs on every platform.
-
-The original pipeline, fairseq's MMS `align_and_segment` script with the Perl `uroman`, is kept as `align: {backend: fairseq, fairseq_dir: ..., uroman_dir: ...}`. The published Mooré datasets were built with it. It only runs on Linux.
-
-On Genesis 1 and 2 in Mooré, the two backends cut the same 115 sentences. Scored with the MMS recognizer, those clips have the same character error rate: 5.4% vs 5.3% on Genesis 1 and 6.8% for both on Genesis 2. The torchaudio clips are about 0.2 s shorter. The fairseq data also has one clip per chapter for the spoken title, which the narrator reads differently from the page; FasoSpeechCorpora leaves titles out by default.
+The default aligner is MMS through torchaudio with the Python `uroman`; it runs on every platform. The original fairseq script with the Perl `uroman` is kept as `align: {backend: fairseq, ...}` (Linux only); the V1 Mooré datasets were built with it. On Genesis 1 and 2 both cut the same 115 sentences, with CER within 0.1 point.
 
 ## Datasets
 
-Published so far, all in Mooré:
+All in Mooré, gated, for non-commercial research. Cards follow [`templates/dataset-card.md`](templates/dataset-card.md).
 
-| Dataset | Content | Size |
+| Dataset | Content | Hours |
 |---|---|---|
-| [MooreSpeechCorpora](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora) | Tales, riddles and proverbs, denoised (`default` config) | 7.7 h |
-| [MooreSpeechCorpora: `contes`](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora/viewer/contes) | Tales, by volume | 4.8 h |
-| [MooreSpeechCorpora: `devinettes`](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora/viewer/devinettes) | Riddles | 2.1 h |
-| [MooreSpeechCorpora: `proverbes`](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora/viewer/proverbes) | Proverbs with French translations | 2.8 h Mooré |
-| [MooreSpeechCorpora: `bible`](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora/viewer/bible) | Mooré Bible from bible.com | 74.3 h |
-| [MooreSpeechCorporaV2](https://huggingface.co/datasets/anyantudre/MooreSpeechCorporaV2) | Tales, riddles and proverbs rebuilt: re-aligned, music cut at the edges, checked by two ASR models, 3 speakers (5.4 h in `default`). Since v2.2 a `bible` config: the Mooré Old Testament, 4 readers, 63.1 h. Also `asr`, `asr_tagged`, `asr_negatives` and `fra` configs | 68.5 h |
+| [MooreSpeechCorpora](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora) | V1: tales, riddles, proverbs (`default`), and the Bible (`bible`, 74.3 h) | 7.7 |
+| [MooreSpeechCorporaV2](https://huggingface.co/datasets/anyantudre/MooreSpeechCorporaV2) | Re-aligned and checked: tales, riddles, proverbs (`default`, 5.4 h), Old Testament (`bible`, 63.1 h), ASR and French configs | 68.5 |
 
-The datasets are gated and for non-commercial research use. Their cards follow [`templates/dataset-card.md`](templates/dataset-card.md).
-
-Once the toolkit is mature, each language gets its own dataset on Hugging Face, named after the original one and published in gated mode: MooreSpeechCorpora, DioulaSpeechCorpora, GourmantchemaSpeechCorpora, FulfuldeSpeechCorpora, and so on.
+Each language will get its own dataset: DioulaSpeechCorpora, GourmantchemaSpeechCorpora, FulfuldeSpeechCorpora, and so on.
 
 ## Use sources responsibly
 
-FasoSpeechCorpora downloads what you point it at. Read each site's terms before you run a recipe, and get permission before you publish a dataset built from someone else's recordings.
+Read each site's terms before running a recipe, and get permission before publishing a dataset built from someone else's recordings.
 
-- bible.com (YouVersion) allows personal use only and forbids automated access in its terms. Bible texts and recordings belong to their publishers.
-- YouTube's terms forbid downloading without permission from the rights holder.
-- The MMS aligner and speech models are licensed CC-BY-NC 4.0, so datasets aligned with them are best kept non-commercial.
+- bible.com allows personal use only and forbids automated access. Texts and recordings belong to their publishers.
+- YouTube forbids downloading without the rights holder's permission.
+- MMS models are CC BY-NC 4.0, so datasets aligned with them are best kept non-commercial.
 
-FasoSpeechCorpora waits between requests: 1 s by default (`delay` in the recipe) and 5 to 10 s on YouTube.
+Requests wait 1 s by default (`delay`), 5 to 10 s on YouTube.
 
 ## Credits
 
-FasoSpeechCorpora is the continuation of MooreSpeechCorpora (this repository's earlier name) and absorbs three older repositories: [speech-dataset-generator](https://github.com/anyantudre/speech-dataset-generator), [moore-data-scraping-bible](https://github.com/anyantudre/moore-data-scraping-bible) and data-alignment-moore, which built the tales and proverbs datasets. They are archived and read-only; their commit history is part of this repository.
+FasoSpeechCorpora continues MooreSpeechCorpora (this repository's earlier name) and includes the history of [speech-dataset-generator](https://github.com/anyantudre/speech-dataset-generator), [moore-data-scraping-bible](https://github.com/anyantudre/moore-data-scraping-bible) and data-alignment-moore, now archived.
 
-- The first bible.com scraper came from [cawoylel/nlp4all](https://github.com/cawoylel/nlp4all).
-- Splitting at pauses started from [thorstenMueller/Audio-to-Voice-Dataset](https://github.com/thorstenMueller/Audio-to-Voice-Dataset).
-- Alignment uses [MMS](https://github.com/facebookresearch/fairseq/tree/main/examples/mms) by Meta AI through [torchaudio](https://pytorch.org/audio), with [uroman](https://github.com/isi-nlp/uroman) by ISI.
-- The YouTube recipe downloads with [yt-dlp](https://github.com/yt-dlp/yt-dlp) and labels clips with [moore-asr-eval-w2vbert](https://huggingface.co/anyantudre/moore-asr-eval-w2vbert). The Mooré and Dioula speech models from [GO AI Corp](https://huggingface.co/goaicorp) work as well.
-- The `enhance` step uses [Demucs](https://github.com/adefossez/demucs) by Alexandre Défossez, first released by Meta AI. The denoised audio in MooreSpeechCorpora was made with [Resemble Enhance](https://github.com/resemble-ai/resemble-enhance) (see [`tutorials/noise_reduce.ipynb`](tutorials/noise_reduce.ipynb)), which pins PyTorch 2.1 and DeepSpeed and no longer installs next to current PyTorch.
+- First bible.com scraper: [cawoylel/nlp4all](https://github.com/cawoylel/nlp4all).
+- Pause splitting: based on [thorstenMueller/Audio-to-Voice-Dataset](https://github.com/thorstenMueller/Audio-to-Voice-Dataset).
+- Alignment: [MMS](https://github.com/facebookresearch/fairseq/tree/main/examples/mms) by Meta AI, [torchaudio](https://pytorch.org/audio), [uroman](https://github.com/isi-nlp/uroman) by ISI.
+- Music removal: [Demucs](https://github.com/adefossez/demucs) by Alexandre Défossez. V1's denoised audio used [Resemble Enhance](https://github.com/resemble-ai/resemble-enhance) ([notebook](tutorials/noise_reduce.ipynb)).
+- YouTube: [yt-dlp](https://github.com/yt-dlp/yt-dlp); clips labelled with [moore-asr-eval-w2vbert](https://huggingface.co/anyantudre/moore-asr-eval-w2vbert) or the [GO AI Corp](https://huggingface.co/goaicorp) models.
 
 ## Citation
 
