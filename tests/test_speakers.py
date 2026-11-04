@@ -42,6 +42,34 @@ def test_cluster_by_chapter_keeps_a_noisy_clip_with_its_chapter():
     assert list(cluster(emb, units, threshold=0.55)) == [0, 0, 0, 0, 0, 1, 1, 1]
 
 
+def test_cluster_sample_gives_every_clip_the_nearest_voice():
+    pytest.importorskip("scipy")
+    from fasospeechcorpora.speakers import cluster_sample
+
+    rng = np.random.default_rng(2)
+    a, b = rng.standard_normal(192), rng.standard_normal(192)
+    emb = np.stack([a + 0.2 * rng.standard_normal(192) for _ in range(120)] +
+                   [b + 0.2 * rng.standard_normal(192) for _ in range(60)] +
+                   [a + 0.9 * rng.standard_normal(192) for _ in range(3)])       # noisy short clips of voice a
+    labels, sim = cluster_sample(emb, threshold=0.55, sample=50, min_group=5)
+    assert list(labels[:120]) == [0] * 120 and list(labels[120:180]) == [1] * 60
+    assert list(labels[180:]) == [0, 0, 0] and sim[180:].max() < sim[:120].min()
+
+
+def test_cluster_sample_merges_groups_of_one_voice():
+    pytest.importorskip("scipy")
+    from fasospeechcorpora.speakers import cluster_sample
+
+    rng = np.random.default_rng(3)
+    a, b = rng.standard_normal(192), rng.standard_normal(192)
+    emb = np.stack([a + 1.0 * rng.standard_normal(192) for _ in range(150)] +    # short clips: noisy
+                   [b + 0.3 * rng.standard_normal(192) for _ in range(40)])
+    split, _ = cluster_sample(emb, threshold=0.55, sample=190, min_group=5, merge=1.0)
+    assert len(set(split[:150])) > 1                      # without merging: reader a is split up
+    labels, _ = cluster_sample(emb, threshold=0.55, sample=190, min_group=5, merge=0.7)
+    assert set(labels[:150]) == {0} and set(labels[150:]) == {1}
+
+
 def test_chapter_units_fall_back_to_the_book_for_small_pages():
     rows = [{"run": "p", "source": "s", "book": "p1", "chapter": f"c{i // 2}"} for i in range(4)]
     rows += [{"run": "t", "source": "s", "chapter": "c0"} for _ in range(3)] + [{"run": "t", "source_id": "x"}]
@@ -87,6 +115,35 @@ def test_speakers_step_labels_and_reads_corrections(tmp_path, monkeypatch):
     pipe.run(["speakers"])
     rows = {r["text"]: r for r in manifest.read(tmp_path / "out" / "final.jsonl")}
     assert rows["La a yɩɩ woto."]["speaker_id"] == 7
+
+
+def test_speakers_clip_runs_split_a_chapter_with_two_voices(tmp_path, monkeypatch):
+    import fasospeechcorpora.speakers as speakers
+
+    pytest.importorskip("scipy")
+
+    class FakeEmbedder:
+        def __init__(self, *a, **k):
+            pass
+
+        def __call__(self, clips, sr):
+            return np.stack([np.eye(192)[0] if median_f0(c) < 165 else np.eye(192)[1] for c in clips])
+
+    monkeypatch.setattr(speakers, "EcapaEmbedder", FakeEmbedder)
+    rows = []
+    for k, (run, chapter, f0) in enumerate([("tales", "c1", 120), ("tales", "c1", 220), ("tales", "c1", 120),
+                                            ("bible", "GEN_1", 120), ("bible", "GEN_1", 220), ("bible", "GEN_1", 220)]):
+        sf.write(tmp_path / f"{k}.wav", voiced(f0), SR)
+        rows.append({"id": str(k), "audio_filepath": f"{k}.wav", "text": "x", "duration": 1.5, "run": run,
+                     "source": run, "chapter": chapter})
+    manifest.write(tmp_path / "final.jsonl", rows)
+    recipe = tmp_path / "r.yaml"
+    recipe.write_text("language: mos\nsource: {type: local, path: .}\n"
+                      "speakers: {clip_runs: [bible], min_unit_clips: 1}\n", encoding="utf-8")
+    Pipeline(load_recipe(recipe, tmp_path)).speakers()
+    got = [r["speaker_group"] for r in manifest.read(tmp_path / "final.jsonl")]
+    assert got[:3] == [0, 0, 0]                      # the tales chapter is one unit: one reader
+    assert got[3] != got[4] == got[5] and min(got[3:]) == 1
 
 
 def test_verify_scores_every_clip_and_filter_uses_it(tmp_path, monkeypatch):

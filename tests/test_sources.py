@@ -78,6 +78,12 @@ def test_local_transcript_is_split_into_sentences(tmp_path):
         "Nin-kẽem a yembr kibare.", "Nin-kẽem a yembr n wa n yik a zak pʋgẽ.", "La, a bi-bilf yikame."]}
 
 
+def test_local_transcript_can_skip_a_title_line(tmp_path):
+    f = tmp_path / "GEN_1.txt"
+    f.write_text("Sɩngre 1\nWẽnnaam naana saasa.\n", encoding="utf-8")
+    assert read_text_file(f, load_language("mos"), skip_lines=1) == {"lines": ["Wẽnnaam naana saasa."]}
+
+
 def test_local_audacity_labels_become_segments(tmp_path):
     f = tmp_path / "tale.txt"
     f.write_text("0.000000\t5.350000\tNin-kẽem a yembr kibare.\n5.36, 10.15, \"La, a bi-bilf yikame.\"\n",

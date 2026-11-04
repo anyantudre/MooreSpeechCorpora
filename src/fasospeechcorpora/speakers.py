@@ -103,6 +103,36 @@ def cluster(emb: np.ndarray, units: list[str] | None = None, threshold: float = 
     return np.array([ranks[g] for g in clip_label], dtype=int)
 
 
+def cluster_sample(emb: np.ndarray, threshold: float = 0.55, sample: int = 5000, min_group: int = 10,
+                   merge: float = 0.7, seed: int = 0) -> tuple[np.ndarray, np.ndarray]:
+    """Clip-by-clip grouping for many clips: cluster a random sample, keep the groups with at least
+    `min_group` clips (the voices; tiny groups are mostly short clips with noisy embeddings), merge the
+    groups whose mean embeddings have a cosine of at least `merge` (short clips of one reader split
+    into several groups whose means are 0.75-0.95 apart; two readers are under 0.6), then give every
+    clip the voice whose mean embedding is closest. Returns (labels, cosine to that voice);
+    labels are 0, 1, 2… from the largest group down."""
+    e = emb / np.linalg.norm(emb, axis=1, keepdims=True)
+    idx = np.random.default_rng(seed).permutation(len(e))[:sample]
+    g = cluster(e[idx], None, threshold)
+    counts = np.bincount(g)
+    keep = [k for k in range(len(counts)) if counts[k] >= min_group] or [0]
+    cent = np.stack([e[idx][g == k].mean(axis=0) for k in keep])
+    cent /= np.linalg.norm(cent, axis=1, keepdims=True)
+    if len(keep) > 1:
+        voice = cluster(cent, None, merge)                    # which voice each kept group belongs to
+        member = {k: v for k, v in zip(keep, voice)}
+        g = np.array([member.get(k, -1) for k in g])
+        cent = np.stack([e[idx][g == v].mean(axis=0) for v in sorted(set(voice))])
+        cent /= np.linalg.norm(cent, axis=1, keepdims=True)
+        keep = sorted(set(voice))
+    sims = e @ cent.T
+    best = sims.argmax(axis=1)
+    order = np.argsort(-np.bincount(best, minlength=len(keep)), kind="stable")
+    rank = np.empty(len(keep), dtype=int)
+    rank[order] = np.arange(len(keep))
+    return rank[best], sims.max(axis=1)
+
+
 def median_f0(wav: np.ndarray, sr: int = 16_000, fmin: float = 70.0, fmax: float = 400.0) -> float | None:
     """Median pitch of the voiced frames (autocorrelation), in Hz."""
     n, hop = int(0.04 * sr), int(0.02 * sr)

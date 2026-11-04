@@ -196,7 +196,9 @@ class Pipeline:
         for name in ("aligned.jsonl", "segmented.jsonl"):
             rows = manifest.read(self.path(name))
             todo = [r for r in rows if not r.get("trimmed")]
-            for r in tqdm(todo, desc=f"trim {name}"):
+            for i, r in enumerate(tqdm(todo, desc=f"trim {name}")):
+                if i and i % 500 == 0:
+                    manifest.write(self.path(name), rows)          # save progress: a rerun skips trimmed clips
                 extractor = extractor or VoiceExtractor(cfg["model"], cfg["device"])
                 wav = audio.load(self.root / r["audio_filepath"], self.sr)
                 voice, music = extractor.split(wav, self.sr)
@@ -290,7 +292,8 @@ class Pipeline:
                     for r, h in zip(batch, hyps):
                         r[key] = round(cer(r["text"], h), 4)
                         r["hyp_" + key[4:]] = h        # kept so scores can be recomputed without the model
-                    manifest.write(self.path(name), rows)          # save progress
+                    if (i // 64) % 5 == 4 or i + 64 >= len(todo):
+                        manifest.write(self.path(name), rows)      # save progress every 320 clips
             del asr
             gc.collect()
             try:
@@ -493,7 +496,11 @@ class Pipeline:
         return None
 
     def speakers(self) -> None:
-        """Label speakers in final.jsonl. Clips are grouped chapter by chapter (see speakers.py).
+        """Label speakers in final.jsonl. Clips are grouped chapter by chapter (see speakers.py), or
+        clip by clip with `by_chapter: false` (for readings with several voices). Above `max_cluster`
+        clips, a sample is grouped and every clip goes to the nearest voice with at least
+        `min_group_clips` clips in it (`speaker_similarity` is its cosine to that voice). In a combined
+        folder, `clip_runs: [bible]` groups those runs clip by clip and the others as `by_chapter` says.
         Writes speakers/summary.json and a few example clips per group to listen to. Put corrections
         in speakers/labels.yaml ({group: {speaker_id: 1, voice: male}}) and run the step again to
         apply them. The grouping is redone when the model, threshold or units change."""
@@ -506,28 +513,65 @@ class Pipeline:
         from . import speakers as sp
 
         cfg = {"model": "ecapa", "threshold": 0.55, "by_chapter": True, "min_unit_clips": 3, "device": None,
-               "male_below_hz": 165, **self.r.speakers}
+               "male_below_hz": 165, "max_cluster": 5000, "min_group_clips": 10, "merge_groups": 0.7,
+               "clip_runs": [], **self.r.speakers}
         rows = manifest.read(self.path("final.jsonl"))
         if not rows:
             return
         out = self.path("speakers")
         out.mkdir(exist_ok=True)
+        # parts grouped separately: the rows grouped as `by_chapter` says, then the runs in `clip_runs`
+        # (combined runs, e.g. a Bible read by several people next to single-reader books) grouped clip by clip
+        clip_runs = set(cfg["clip_runs"])
+        parts = [([i for i, r in enumerate(rows) if r.get("run") not in clip_runs], cfg["by_chapter"]),
+                 ([i for i, r in enumerate(rows) if r.get("run") in clip_runs], False)]
+        parts = [(idx, by_ch) for idx, by_ch in parts if idx]
         method = {k: cfg[k] for k in ("model", "threshold", "by_chapter", "min_unit_clips")}
+        if clip_runs:
+            method["clip_runs"] = sorted(clip_runs)
+        if any(not by_ch and len(idx) > cfg["max_cluster"] for idx, by_ch in parts):
+            method.update({k: cfg[k] for k in ("max_cluster", "min_group_clips", "merge_groups")})
         method_file = out / "method.json"
         done = method_file.exists() and json.loads(method_file.read_text(encoding="utf-8")) == method
         if not (done and all("speaker_group" in r for r in rows)):
-            clips = [audio.load(self.root / r.get("voice_filepath", r["audio_filepath"]), self.sr) for r in rows]
-            if cfg["model"] == "ecapa":
-                embedder = sp.EcapaEmbedder(device=cfg["device"], savedir=str(out / "model"))
-            else:
-                embedder = sp.SpeakerEmbedder(cfg["model"], cfg["device"])
-            emb = embedder(clips, self.sr)
-            units = sp.chapter_units(rows, cfg["min_unit_clips"]) if cfg["by_chapter"] else None
-            groups = sp.cluster(emb, units, cfg["threshold"])
-            for r, g, c in zip(rows, groups, clips):
-                r["speaker_group"] = int(g)
-                if r.get("f0") is None:
-                    r["f0"] = sp.median_f0(c, self.sr)
+            cache = out / "embeddings.npz"                  # reused while the model and clips stay the same
+            ids = [r["id"] for r in rows]
+            emb = None
+            if cache.exists():
+                saved = np.load(cache, allow_pickle=False)
+                if str(saved["model"]) == cfg["model"] and all("f0" in r for r in rows):
+                    pos = {k: i for i, k in enumerate(saved["ids"].tolist())}
+                    if all(k in pos for k in ids):
+                        emb = saved["emb"][[pos[k] for k in ids]]
+            if emb is None:
+                if cfg["model"] == "ecapa":
+                    embedder = sp.EcapaEmbedder(device=cfg["device"], savedir=str(out / "model"))
+                else:
+                    embedder = sp.SpeakerEmbedder(cfg["model"], cfg["device"])
+                emb = []
+                for i in tqdm(range(0, len(rows), 512), desc="speaker embeddings"):     # a batch at a time: bounded memory
+                    batch = rows[i:i + 512]
+                    clips = [audio.load(self.root / r.get("voice_filepath", r["audio_filepath"]), self.sr) for r in batch]
+                    emb.append(embedder(clips, self.sr))
+                    for r, c in zip(batch, clips):
+                        if r.get("f0") is None:
+                            r["f0"] = sp.median_f0(c, self.sr)
+                emb = np.concatenate(emb)
+                np.savez(cache, ids=np.array(ids), emb=emb, model=np.array(cfg["model"]))
+            first = 0                                       # group numbers continue from one part to the next
+            for idx, by_ch in parts:
+                part = [rows[i] for i in idx]
+                if not by_ch and len(idx) > cfg["max_cluster"]:
+                    groups, sim = sp.cluster_sample(emb[idx], cfg["threshold"], cfg["max_cluster"],
+                                                    cfg["min_group_clips"], cfg["merge_groups"])
+                    for r, s in zip(part, sim):
+                        r["speaker_similarity"] = round(float(s), 3)
+                else:
+                    units = sp.chapter_units(part, cfg["min_unit_clips"]) if by_ch else None
+                    groups = sp.cluster(emb[idx], units, cfg["threshold"])
+                for r, g in zip(part, groups):
+                    r["speaker_group"] = first + int(g)
+                first += int(groups.max()) + 1
             for old in out.glob("group*_example*.wav"):
                 old.unlink()
             method_file.write_text(json.dumps(method), encoding="utf-8")

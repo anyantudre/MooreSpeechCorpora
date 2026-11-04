@@ -1,17 +1,23 @@
-# MooreSpeechCorporaV2: label speakers and export, after the six source recipes and
-#   fasospeech combine data/proverbs-p data/proverbs-sissao data/tales-sibalo data/tales-v1 data/tales-vol5 data/riddles-v1 --output data/moore-v2
+# MooreSpeechCorporaV2: label speakers and export, after the seven source recipes and
+#   fasospeech combine data/proverbs-p data/proverbs-sissao data/tales-sibalo data/tales-v1 data/tales-vol5 data/riddles-v1 data/bible --output data/moore-v2
 #   fasospeech run recipes/moore-v2/combine.yaml --output data/moore-v2
-# Configs: the trimmed TTS clips by category (contes, devinettes, proverbes; the Hub `default` config
-# joins the three), asr (music bed kept), asr_negatives (music-only clips, empty text), asr_tagged
-# (untrimmed, <MUSIC> on edges) and fra (French readings).
+# Configs: the trimmed TTS clips by category (contes, devinettes, proverbes, bible; the Hub `default` config
+# joins the first three, the Bible is loaded by name), asr (music bed kept), asr_negatives (music-only clips,
+# empty text), asr_tagged (untrimmed, <MUSIC> on edges) and fra (French readings).
+# The tales, riddles and proverbs have one reader per chapter and are grouped chapter by chapter. The Bible
+# changes reader with the book (4 readers, checked clip by clip: no chapter has two), so its clips are
+# grouped one by one (clip_runs).
 language: mos
 steps: [speakers, export]
+speakers:
+  clip_runs: [bible]
 export:
   formats: [manifest, hf]
   configs:
     - {name: contes, view: tts, where: {category: conte}}
     - {name: devinettes, view: tts, where: {category: devinette}}
     - {name: proverbes, view: tts, where: {category: proverbe}}
+    - {name: bible, view: tts, where: {category: bible}}
     - asr
     - asr_negatives
     - asr_tagged

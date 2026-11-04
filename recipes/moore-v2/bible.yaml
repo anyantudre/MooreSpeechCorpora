@@ -1,0 +1,37 @@
+# MooreSpeechCorporaV2 `bible`: the Mooré Old Testament read on bible.com (version 3058, MPBU), from the original
+# chapter recordings: 929 MP3s (74 h) with their texts, one sentence per line after a title line.
+# bible.com's terms allow personal use only: see the License section of the V2 card.
+# Put the chapters (GEN_1_MPBU.mp3 + GEN_1_MPBU.txt, ...) in data/raw/bible, e.g. from bible.com with
+# recipes/mos-bible.yaml, then run from the repository root:
+#   fasospeech run recipes/moore-v2/bible.yaml --output data/bible
+language: mos
+metadata:
+  category: bible
+  book: "Bible, Mooré Old Testament (bible.com 3058, MPBU)"
+source:
+  type: local
+  path: data/raw/bible
+  skip_lines: 1              # "1 Kibayã 1": the reader announces the chapter in words
+steps: [fetch, prepare, align, trim, verify, filter]
+align:
+  backend: mms
+trim:
+  margin: 0.2
+verify:
+  models:
+    - {model: facebook/mms-1b-all, target_lang: mos}
+    - {model: anyantudre/moore-asr-eval-w2vbert}     # gated: request access, set HF_TOKEN
+filter:
+  languages: [mos]
+  min_score: null            # music lowers alignment scores; CER is the quality gate instead
+  max_cer: 0.25
+  min_duration: 0.8
+  min_chars_per_second: 5
+  max_duration: 20
+  max_music_under_voice_db: -30
+  clean_text: true
+  no_digits: true
+  variants:
+    asr: {max_music_under_voice_db: null, min_chars_per_second: 3}
+  negatives: {of: asr, max_share: 0.1, min_len: 1.0}
+  tagged: {of: asr, min_music: 0.5}
