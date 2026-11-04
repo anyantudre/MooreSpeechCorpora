@@ -157,7 +157,7 @@ fasospeech combine data/proverbs-p data/tales-v1 data/riddles-v1 --output data/m
 fasospeech run recipes/moore-v2/combine.yaml --output data/moore-v2
 ```
 
-`recipes/moore-v2/` holds the recipes that build MooreSpeechCorporaV2: six sources, one per recipe, then `combine.yaml` for the speakers and the export (TTS clips, the ASR views and the French readings).
+`recipes/moore-v2/` holds the recipes that build MooreSpeechCorporaV2: seven sources, one per recipe (`bible.yaml` is the Mooré Old Testament), then `combine.yaml` for the speakers and the export (TTS clips, the ASR views and the French readings).
 
 ## Languages and sources
 
@@ -190,7 +190,7 @@ Published so far, all in Mooré:
 | [MooreSpeechCorpora: `devinettes`](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora/viewer/devinettes) | Riddles | 2.1 h |
 | [MooreSpeechCorpora: `proverbes`](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora/viewer/proverbes) | Proverbs with French translations | 2.8 h Mooré |
 | [MooreSpeechCorpora: `bible`](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora/viewer/bible) | Mooré Bible from bible.com | 74.3 h |
-| [MooreSpeechCorporaV2](https://huggingface.co/datasets/anyantudre/MooreSpeechCorporaV2) | Tales, riddles and proverbs rebuilt: re-aligned, music cut at the edges, checked by two ASR models, 3 speakers. Also `asr`, `asr_tagged`, `asr_negatives` and `fra` configs | 5.4 h |
+| [MooreSpeechCorporaV2](https://huggingface.co/datasets/anyantudre/MooreSpeechCorporaV2) | Tales, riddles and proverbs rebuilt: re-aligned, music cut at the edges, checked by two ASR models, 3 speakers (5.4 h in `default`). Since v2.2 a `bible` config: the Mooré Old Testament, 4 readers, 63.1 h. Also `asr`, `asr_tagged`, `asr_negatives` and `fra` configs | 68.5 h |
 
 The datasets are gated and for non-commercial research use. Their cards follow [`templates/dataset-card.md`](templates/dataset-card.md).
 
