@@ -401,11 +401,15 @@ class Pipeline:
 
         `drop_first_clip: true` drops the first clip of each recording in every view, e.g. when the
         reader announces the chapter before the first line and the cut does not always leave it out.
+
+        `numbers_to_words: true` writes standalone numbers in words (see numbers.py), keeps the old text in
+        `raw_text` and flags the clip `numbers_written_out`. It runs after verify, so `cer` was measured on
+        the text with digits; re-run verify after it if the CER should follow the new text.
         """
         cfg = {"min_duration": 0.5, "max_duration": 30.0, "min_score": 0.2, "max_foreign_ratio": None,
                "min_chars_per_second": 3.0, "max_chars_per_second": None,
                "max_music_under_voice_db": None, "max_cer": None, "clean_text": False, "no_digits": False,
-               "drop_first_clip": False,
+               "drop_first_clip": False, "numbers_to_words": False,
                "languages": [self.lang.code], **{k: v for k, v in self.r.filter.items() if k not in self.VIEWS}}
         rows = manifest.read(self.path("aligned.jsonl")) + manifest.read(self.path("segmented.jsonl"))
         if cfg["clean_text"]:
@@ -413,6 +417,14 @@ class Pipeline:
             for r in rows:
                 if r.get("text"):
                     r["raw_text"], r["text"] = r["text"], clean_text(r["text"])
+        if cfg["numbers_to_words"]:
+            from .numbers import write_numbers
+            for r in rows:
+                t = r.get("text")
+                if t and any(c.isdigit() for c in t) and (new := write_numbers(t, self.lang.code)) != t:
+                    r["raw_text"] = r.get("raw_text") or t
+                    r["text"] = new
+                    r["qc_flags"] = [*(r.get("qc_flags") or []), "numbers_written_out"]
         for r in rows:
             self._stamp(r)
             if "segment_type" not in r:

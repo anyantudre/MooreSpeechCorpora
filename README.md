@@ -120,6 +120,8 @@ mms_code: dyu             # MMS adapter used by `fasospeech check`
 
 Then set `language: dyu` in a recipe, or `language: {file: my-language.yaml}`.
 
+`filter: {numbers_to_words: true}` writes standalone numbers in words ("45" becomes "pis-naase la a nu" in Mooré) and keeps the old text in `raw_text`. Mooré is the only language with a number writer so far; add yours in [`numbers.py`](src/fasospeechcorpora/numbers.py).
+
 ## Add your source
 
 A recipe says where the audio comes from and how to process it:
@@ -203,6 +205,7 @@ FasoSpeechCorpora continues MooreSpeechCorpora (this repository's earlier name) 
 - First bible.com scraper: [cawoylel/nlp4all](https://github.com/cawoylel/nlp4all).
 - Pause splitting: based on [thorstenMueller/Audio-to-Voice-Dataset](https://github.com/thorstenMueller/Audio-to-Voice-Dataset).
 - Alignment: [MMS](https://github.com/facebookresearch/fairseq/tree/main/examples/mms) by Meta AI, [torchaudio](https://pytorch.org/audio), [uroman](https://github.com/isi-nlp/uroman) by ISI.
+- Mooré numbers in words: the MooreConverter by [Salif Sawadogo](https://github.com/sawallesalfo).
 - Music removal: [Demucs](https://github.com/adefossez/demucs) by Alexandre Défossez. V1's denoised audio used [Resemble Enhance](https://github.com/resemble-ai/resemble-enhance) ([notebook](tutorials/noise_reduce.ipynb)).
 - YouTube: [yt-dlp](https://github.com/yt-dlp/yt-dlp); clips labelled with [moore-asr-eval-w2vbert](https://huggingface.co/anyantudre/moore-asr-eval-w2vbert) or the [GO AI Corp](https://huggingface.co/goaicorp) models.
 
