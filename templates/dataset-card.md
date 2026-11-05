@@ -28,40 +28,22 @@ configs:
   data_files:
   - split: train
     path: "{{subset}}/train-*"
-# Gate: the same form on every gated dataset. Only the heading and the prompt change.
+# Gate: the same short form on every gated dataset. Only the name in the heading and the prompt changes.
+# No "requests are reviewed by hand" line and no list of sources in the prompt: the card has them.
 extra_gated_heading: "Request access to {{DatasetName}}"
-extra_gated_prompt: '{{DatasetName}} collects publicly available {{Language}} speech, aligned with its text, for
-  speech recognition and text-to-speech research. This version holds {{content}}. Requests are reviewed by hand,
-  usually within a few days. The recordings come from {{third-party publications, owners named}}. They are shared
-  for non-commercial research only and remain the property of their owners. License: CC BY-NC 4.0 for our
-  annotations only; the audio and texts stay the property of their owners. Please read the dataset card, its terms and licenses before requesting access.'
+extra_gated_prompt: '{{DatasetName}} collects publicly available {{Language}} speech aligned with its text, for speech
+  recognition and text-to-speech research. The recordings belong to their publishers (listed on the card) and are
+  shared for non-commercial research only; our annotations are CC BY-NC 4.0. Please read the card, its terms and
+  licenses before requesting access, and make sure you understand them.'
 extra_gated_fields:
-  First name(s): text
-  Last name: text
-  Email address where we can reach you (work or academic if possible): text
-  Affiliation (university, institution or company): text
-  Country: country
-  Role:
-    type: select
-    options: [Student, Researcher or academic staff, Engineer or developer, Journalist or media, Independent, Other]
+  Full name: text
+  Email address (work or academic if possible): text
+  Affiliation and country: text
   Intended use:
     type: select
     options: [Academic research, Teaching, Non-profit or community project, Commercial product or service, Industrial R&D, Personal project, Other]
-  Describe your project and how you will use the dataset (2-3 sentences): text
-  Will you use the dataset or the audio it contains commercially?:
-    type: select
-    options: ['Yes', 'No', Not sure]
-  Do you agree to comply with the license stated above?:
-    type: select
-    options: ['Yes', 'No', Not sure]
-  "Do you speak {{Language}}?":
-    type: select
-    options: [Native speaker, Second language, 'No']
-  "May we contact you about listening tests or collaborations on {{Language}} speech technology?":
-    type: select
-    options: ['Yes', 'No']
-  I will not redistribute the audio or the transcripts, in whole or in part: checkbox
-  I understand the recordings come from third-party publications, are provided for non-commercial research only, and remain the property of their owners: checkbox
+  Your project and how you will use the dataset (1-2 sentences): text
+  "I agree to comply with the license stated above: non-commercial research only, no redistribution of the audio or transcripts": checkbox
   I will cite this work if I use it in a publication: checkbox
 extra_gated_button_content: Submit request
 ---
