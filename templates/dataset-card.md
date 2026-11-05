@@ -34,7 +34,7 @@ extra_gated_prompt: '{{DatasetName}} collects publicly available {{Language}} sp
   speech recognition and text-to-speech research. This version holds {{content}}. Requests are reviewed by hand,
   usually within a few days. The recordings come from {{third-party publications, owners named}}. They are shared
   for non-commercial research only and remain the property of their owners. License: CC BY-NC 4.0 for our
-  annotations only; the audio and texts stay the property of their owners.'
+  annotations only; the audio and texts stay the property of their owners. Please read the dataset card, its terms and licenses before requesting access.'
 extra_gated_fields:
   First name(s): text
   Last name: text
@@ -120,7 +120,7 @@ Style (same as the GitHub READMEs)
 The same work extends to other languages of Burkina Faso through [FasoSpeechCorpora](https://github.com/anyantudre/FasoSpeechCorpora), the toolkit that builds these corpora.
 
 > [!NOTE]
-> Access is gated and requests are reviewed by hand. Anonymous or vague requests will not be approved.
+> Access is gated and requests are reviewed by hand. Collecting and cleaning {{Language}} {{speech or text}} takes a lot of time and resources, and we do it mostly out of passion. Please read this card, its terms and licenses before requesting access, and make sure you understand them. Respecting them keeps this work useful to the community and helps move our local languages forward. Anonymous or vague requests will not be approved.
 
 ## Overview
 
