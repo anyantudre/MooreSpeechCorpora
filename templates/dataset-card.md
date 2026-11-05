@@ -67,8 +67,8 @@ extra_gated_button_content: Submit request
 ---
 
 <!--
-Dataset card template for the FasoSpeechCorpora datasets on Hugging Face (anyantudre and goaicorp).
-Copy this file to README.md in the dataset repo, fill every {{placeholder}}, delete sections that stay empty
+Dataset card template for the open FasoSpeechCorpora datasets on Hugging Face (anyantudre). goaicorp datasets
+follow goaicorp/hub-conventions instead. Copy this file to README.md in the dataset repo, fill every {{placeholder}}, delete sections that stay empty
 and delete this comment. The YAML block must stay at the very top of the file.
 
 Framing
@@ -79,8 +79,17 @@ Framing
 Rights
 - Credit every owner by name (author, reader, publisher) in Sources and credits, with what their terms say.
 - Never claim a license on audio we do not own. CC BY-NC 4.0 covers only our annotations.
-- Sources with different owners or terms go in separate subsets, each with its own credit line.
+- Sources with different owners or terms go in separate subsets. Credits appear only in Sources and credits:
+  no "credited source by source" or "one subset and credit per source" wording elsewhere on the card.
 - Material whose terms forbid posting it online (jw.org, for example) never goes in a public dataset.
+
+Layout
+- Order: logo, title, tagline, badges, opening paragraph, the English notice ([!NOTE] or warning band),
+  then "Résumé en français" as the last block before the first "##" section.
+- The Résumé is a full French version of the tagline, opening paragraph and notice, so a French-only
+  reader gets everything (sizes, access rules, the line on anonymous or vague requests). No "En bref".
+- All badges on one line in one <p align="center">, each <img> with style="display: inline-block;
+  vertical-align: middle;" (the Hub's CSS shows images as blocks, so they would stack otherwise).
 
 Images
 - Load the logo from the public GitHub repo (as below), never from the dataset repo: files in a gated repo
@@ -90,6 +99,12 @@ Columns
 - `category` for the content type (conte, devinette, proverbe, bible...), never `genre` (in French it also
   means male or female). `voice` is the reader's voice, `male` or `female`.
 - Subset names are lowercase (contes, devinettes, proverbes, bible, asr).
+
+Contact and wording
+- The only contact is the License section's last line (nyantudrealban@gmail.com). No Contacts section and
+  no "Questions:" line under Access.
+- Write "we" and "our own work". Link related open datasets and the evaluation benchmarks (MooreMTBench,
+  MooreSpeechBench).
 
 Style (same as the GitHub READMEs)
 - Professional and short. Run the text through the humanizer skill before publishing.
@@ -107,13 +122,8 @@ Style (same as the GitHub READMEs)
 
 <p align="center">
   Publicly available {{Language}} speech, aligned with its text, for speech recognition and text-to-speech.<br>
-  <img alt="Language: {{Language}}" src="https://img.shields.io/badge/language-{{Language}}%20({{iso}})-4A2E17">
-  <img alt="{{hours}} hours" src="https://img.shields.io/badge/audio-{{hours}}%20h-B0723A">
-  <img alt="License: see card" src="https://img.shields.io/badge/license-see%20card-4A2E17">
-  <a href="https://github.com/anyantudre/FasoSpeechCorpora"><img alt="Built with FasoSpeechCorpora" src="https://img.shields.io/badge/built%20with-FasoSpeechCorpora-B0723A"></a>
+  <img alt="Language: {{Language}}" src="https://img.shields.io/badge/language-{{Language}}%20({{iso}})-4A2E17" style="display: inline-block; vertical-align: middle;"> <img alt="{{hours}} hours" src="https://img.shields.io/badge/audio-{{hours}}%20h-B0723A" style="display: inline-block; vertical-align: middle;"> <img alt="License: see card" src="https://img.shields.io/badge/license-see%20card-4A2E17" style="display: inline-block; vertical-align: middle;"> <a href="https://github.com/anyantudre/FasoSpeechCorpora"><img alt="Built with FasoSpeechCorpora" src="https://img.shields.io/badge/built%20with-FasoSpeechCorpora-B0723A" style="display: inline-block; vertical-align: middle;"></a>
 </p>
-
-> **En bref.** {{Two or three sentences in French: what it is, what this version holds, how many hours, access on request for non-commercial research.}}
 
 {{DatasetName}} aims to collect all publicly available {{Language}} (ISO 639-3 `{{iso}}`) speech, cut into sentences and paired with its text, for speech recognition and text-to-speech research. This version holds {{content}}. Next versions add more sources.
 
@@ -121,6 +131,8 @@ The same work extends to other languages of Burkina Faso through [FasoSpeechCorp
 
 > [!NOTE]
 > Access is gated and requests are reviewed by hand. Collecting and cleaning {{Language}} {{speech or text}} takes a lot of time and resources, and we do it mostly out of passion. Please read this card, its terms and licenses before requesting access, and make sure you understand them. Respecting them keeps this work useful to the community and helps move our local languages forward. Anonymous or vague requests will not be approved.
+
+> **Résumé en français.** {{A full French version of the tagline, the opening paragraph and the notice above, written as one text without repeats: what the set is, what this version holds, sizes, access on request for non-commercial research, and that anonymous or vague requests are not approved.}}
 
 ## Overview
 
@@ -178,14 +190,14 @@ Built with [FasoSpeechCorpora](https://github.com/anyantudre/FasoSpeechCorpora),
 
 ## Access
 
-Fill in the form on this page. Requests are approved for people and institutions that say who they are, describe a research or academic use, and accept the non-commercial terms. Questions: Wendyellé A. Alban NYANTUDRE ([nyantudre@gmail.com](mailto:nyantudre@gmail.com)).
+Fill in the form on this page. We approve people and institutions that say who they are, describe a research or academic use and accept the non-commercial terms.
 
 ## License
 
 - **Audio and source texts:** property of the owners listed in Sources and credits. No license is granted on them; they are shared for non-commercial research and their owners can ask for removal.
 - **Our work** (segmentation, alignment, corrected transcripts, metadata): CC BY-NC 4.0.
 
-For other uses, contact us. By accessing this dataset you agree to these terms.
+For other uses or questions, contact us: Wendyellé A. Alban NYANTUDRE ([nyantudrealban@gmail.com](mailto:nyantudrealban@gmail.com)). By accessing this dataset you agree to these terms.
 
 ## Citation
 
@@ -198,8 +210,3 @@ For other uses, contact us. By accessing this dataset you agree to these terms.
   url          = {https://huggingface.co/datasets/{{owner}}/{{DatasetName}}}
 }
 ```
-
-## Contacts
-
-- Wendyellé A. Alban NYANTUDRE, curator: [nyantudre@gmail.com](mailto:nyantudre@gmail.com), [LinkedIn](https://www.linkedin.com/in/anyantudre)
-- Aristide BANDAOGO: [aristide@goaicorporation.org](mailto:aristide@goaicorporation.org)

@@ -177,12 +177,12 @@ The default aligner is MMS through torchaudio with the Python `uroman`; it runs 
 
 ## Datasets
 
-All in Mooré, gated, for non-commercial research. Cards follow [`templates/dataset-card.md`](templates/dataset-card.md).
+All in Mooré, gated, for non-commercial research. Dataset cards follow [`templates/dataset-card.md`](templates/dataset-card.md), model cards [`templates/model-card.md`](templates/model-card.md).
 
 | Dataset | Content | Hours |
 |---|---|---|
 | [MooreSpeechCorpora](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora) | V1: tales, riddles, proverbs (`default`), and the Bible (`bible`, 74.3 h) | 7.7 |
-| [MooreSpeechCorporaV2](https://huggingface.co/datasets/anyantudre/MooreSpeechCorporaV2) | Re-aligned and checked: tales, riddles, proverbs (`default`, 5.4 h), Old Testament (`bible`, 62.5 h), ASR and French configs | 67.9 |
+| [MooreSpeechCorporaV2](https://huggingface.co/datasets/anyantudre/MooreSpeechCorporaV2) | Re-aligned and checked: tales, riddles, proverbs (`default`, 5.4 h), Old Testament (`bible`, 62.4 h), ASR and French configs | 67.9 |
 
 Each language will get its own dataset: DioulaSpeechCorpora, GourmantchemaSpeechCorpora, FulfuldeSpeechCorpora, and so on.
 
