@@ -67,6 +67,18 @@ def test_filter_rules(tmp_path):
     assert [r["id"] for r in manifest.read(tmp_path / "final.jsonl")] == ["ok"]
 
 
+def test_filter_can_drop_the_first_clip_of_each_recording(tmp_path):
+    recipe = tmp_path / "r.yaml"
+    recipe.write_text("language: mos\nsource: {type: local, path: .}\n"
+                      "filter: {drop_first_clip: true, variants: {asr: {}}}\n", encoding="utf-8")
+    pipe = Pipeline(load_recipe(recipe, tmp_path))
+    rows = [{"id": f"{ch}_{i}", "source_id": ch, "start": 3.0 * i + 6, "text": "Wẽnnaam yeelame.", "duration": 2.0,
+             "language": "mos"} for ch in ("GEN_1", "GEN_2") for i in (1, 0, 2)]
+    manifest.write(tmp_path / "aligned.jsonl", rows)
+    pipe.filter()
+    for name in ("final.jsonl", "final_asr.jsonl"):
+        assert sorted(r["id"] for r in manifest.read(tmp_path / name)) == ["GEN_1_1", "GEN_1_2", "GEN_2_1", "GEN_2_2"]
+
 def test_enhance_swaps_in_the_voice_track(tmp_path, monkeypatch):
     import fasospeechcorpora.enhance as enhance
 

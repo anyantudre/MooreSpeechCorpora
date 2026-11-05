@@ -182,7 +182,7 @@ All in Mooré, gated, for non-commercial research. Cards follow [`templates/data
 | Dataset | Content | Hours |
 |---|---|---|
 | [MooreSpeechCorpora](https://huggingface.co/datasets/anyantudre/MooreSpeechCorpora) | V1: tales, riddles, proverbs (`default`), and the Bible (`bible`, 74.3 h) | 7.7 |
-| [MooreSpeechCorporaV2](https://huggingface.co/datasets/anyantudre/MooreSpeechCorporaV2) | Re-aligned and checked: tales, riddles, proverbs (`default`, 5.4 h), Old Testament (`bible`, 63.1 h), ASR and French configs | 68.5 |
+| [MooreSpeechCorporaV2](https://huggingface.co/datasets/anyantudre/MooreSpeechCorporaV2) | Re-aligned and checked: tales, riddles, proverbs (`default`, 5.4 h), Old Testament (`bible`, 62.5 h), ASR and French configs | 67.9 |
 
 Each language will get its own dataset: DioulaSpeechCorpora, GourmantchemaSpeechCorpora, FulfuldeSpeechCorpora, and so on.
 
