@@ -25,6 +25,7 @@ filter:
   languages: [mos]
   min_score: null            # music lowers alignment scores; CER is the quality gate instead
   max_cer: 0.25
+  drop_first_clip: true      # the first clip sometimes keeps the end of the spoken chapter announcement
   min_duration: 0.8
   min_chars_per_second: 5
   max_duration: 20

@@ -398,10 +398,14 @@ class Pipeline:
                      music-only clips with empty text, at most max_share of the `of` view
           tagged:    {of: asr, min_music: 0.5}                -> final_asr_tagged.jsonl
                      the `of` view on untrimmed audio, with <MUSIC> on edges that had music
+
+        `drop_first_clip: true` drops the first clip of each recording in every view, e.g. when the
+        reader announces the chapter before the first line and the cut does not always leave it out.
         """
         cfg = {"min_duration": 0.5, "max_duration": 30.0, "min_score": 0.2, "max_foreign_ratio": None,
                "min_chars_per_second": 3.0, "max_chars_per_second": None,
                "max_music_under_voice_db": None, "max_cer": None, "clean_text": False, "no_digits": False,
+               "drop_first_clip": False,
                "languages": [self.lang.code], **{k: v for k, v in self.r.filter.items() if k not in self.VIEWS}}
         rows = manifest.read(self.path("aligned.jsonl")) + manifest.read(self.path("segmented.jsonl"))
         if cfg["clean_text"]:
@@ -413,6 +417,12 @@ class Pipeline:
             self._stamp(r)
             if "segment_type" not in r:
                 nonspeech.annotate(r)
+        first = {}                                  # the earliest clip of each recording
+        for r in rows:
+            key = r.get("source_id")
+            if key is not None and (key not in first or r.get("start", 0) < first[key].get("start", 0)):
+                first[key] = r
+        self._first_ids = {r["id"] for r in first.values()}
         views = {None: self._keep(rows, cfg, "final.jsonl")}
         for name, over in (self.r.filter.get("variants") or {}).items():
             views[name] = self._keep(rows, {**cfg, **(over or {})}, f"final_{name}.jsonl")
@@ -468,6 +478,8 @@ class Pipeline:
         text, d = (r.get("text") or "").strip(), r["duration"]
         if not text:
             return "no_text"
+        if cfg.get("drop_first_clip") and r["id"] in getattr(self, "_first_ids", ()):
+            return "first_clip"
         if r.get("no_voice"):
             return "no_voice"
         if cfg["languages"] and not self._in_languages(r, cfg["languages"]):
